@@ -72,6 +72,21 @@
      ^{:type Date
        :translate/chinese "日期"} test-date]])
 
+(def meta-schema
+  '[^{:lacinia/tag true
+      :datomic/tag true
+      :spec/tag true
+      :translate/tag true}
+    default
+
+    ^{:translate/chinese "測試資料"}
+    test-data
+    [^{:type Integer
+       :datomic/unique :db.unique/identity
+       :translate/chinese "測試id"} id
+     ^{:type DateTime
+       :translate/chinese "日期"} test-date]])
+
 
 (def meta-db
-  (hodur/init-schema engine-schema))
+  (hodur/init-schema meta-schema))

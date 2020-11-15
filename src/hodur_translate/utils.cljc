@@ -55,7 +55,28 @@
        (recur g' (conj l n) (union s' (intersection (no-incoming g') m)))))))
 
 
-(defn ^:private all-ids
+(defn user-ids
+  ([conn tag]
+   (if tag
+     (d/q '[:find [?e ...]
+            :in $ ?tag
+            :where
+            [?e ?tag true]
+            [?e :type/nature :user]
+            (not [?e :type/interface true])
+            (not [?e :type/union true])]
+          @conn tag)
+     (d/q '[:find [?e ...]
+            :where
+            [?e :type/nature :user]
+            (not [?e :type/interface true])
+            (not [?e :type/union true])]
+          @conn)))
+  ([conn]
+   (user-ids conn nil)))
+
+
+(defn all-ids
   "Returns all ids of all entity nodes. When an optional map is passed
   with a tag, the ids are filtered by that tag."
   ([conn]

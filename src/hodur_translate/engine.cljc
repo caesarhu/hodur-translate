@@ -21,6 +21,9 @@
 
 (def  temp-id-map (atom {}))
 
+(def primary-types
+  '[String Float Integer Boolean DateTime ID])
+
 
 (def  meta-schema
   {;;general meta nodes
@@ -385,9 +388,6 @@
             (parse-types a type-group))
           accum
           type-groups))
-
-(def primary-types
-  '[Date String Float Integer Boolean DateTime ID]) ;; fix by caesarhu, add Date type for personal usage
 
 (defn  create-primitive-types
   [accum]
