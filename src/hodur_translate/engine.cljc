@@ -1,3 +1,5 @@
+;;; copy from https://github.com/hodur-org/hodur-engine, add some primary types personally
+
 (ns hodur-translate.engine
   (:require
     [camel-snake-kebab.core :refer [->camelCaseKeyword
@@ -16,16 +18,14 @@
          JarEntry
          JarFile))))
 
-
-(def  temp-id-counter (atom 0))
-
-(def  temp-id-map (atom {}))
-
 (def primary-types
-  '[String Float Integer Boolean DateTime ID])
+  '[String Float Integer Boolean DateTime ID Date])
 
+(def ^:private temp-id-counter (atom 0))
 
-(def  meta-schema
+(def ^:private temp-id-map (atom {}))
+
+(def ^:private meta-schema
   {;;general meta nodes
    :node/type             {:db/index true}
 
@@ -101,7 +101,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 #?(:clj
-   (defn  jar-name
+   (defn ^:private jar-name
      [url]
      (->> url
           .getPath
@@ -110,7 +110,7 @@
 
 
 #?(:clj
-   (defn  jar-path
+   (defn ^:private jar-path
      [url]
      (->> url
           .getPath
@@ -119,7 +119,7 @@
 
 
 #?(:clj
-   (defn  slurpable-streams
+   (defn ^:private slurpable-streams
      [path]
      (let [is-edn? #(string/ends-with? % ".edn")]
        (if (and (= java.net.URL (type path))
@@ -139,7 +139,7 @@
 
 
 #?(:clj
-   (defn  schema-streams
+   (defn ^:private schema-streams
      [paths]
      (reduce
        (fn [a path]
@@ -148,7 +148,7 @@
 
 
 #?(:clj
-   (defn  slurp-files
+   (defn ^:private slurp-files
      [files]
      (map #(-> % slurp edn/read-string)
           files)))
@@ -157,23 +157,23 @@
 ;; Temp ID state stuff
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defn  reset-temp-id-state!
+(defn ^:private reset-temp-id-state!
   []
   (reset! temp-id-counter 0)
   (reset! temp-id-map {}))
 
 
-(defn  next-temp-id!
+(defn ^:private next-temp-id!
   []
   (swap! temp-id-counter dec))
 
 
-(defn  set-temp-id!
+(defn ^:private set-temp-id!
   [i]
   (swap! temp-id-map assoc i (next-temp-id!)))
 
 
-(defn  get-temp-id!
+(defn ^:private get-temp-id!
   ([t i r]
    (get-temp-id! (str t "-" i "-" r)))
   ([i]
@@ -185,34 +185,34 @@
 ;; Parsing functions
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defn  implements-reader
+(defn ^:private implements-reader
   [k & coll]
   {:new-v (map (fn [sym] {:db/id (get-temp-id! sym)})
                (flatten coll))})
 
 
-(defn  create-type-reader
+(defn ^:private create-type-reader
   [ns]
   (fn [k sym]
     {:new-k (keyword ns "type")
      :new-v {:db/id (get-temp-id! sym)}}))
 
 
-(defn  expanded-key
+(defn ^:private expanded-key
   [ns k]
   (if (namespace k)
     k
     (keyword ns (name k))))
 
 
-(defn  cardinality-reader
+(defn ^:private cardinality-reader
   [k v]
   (if (not (vector? v))
     {:new-v [v v]}
     {:new-v v}))
 
 
-(defn  find-and-run-reader
+(defn ^:private find-and-run-reader
   [reader-map ns k v]
   (let [expanded-k (expanded-key ns k)
         out {:new-k expanded-k
@@ -222,7 +222,7 @@
       out)))
 
 
-(defn  apply-metas
+(defn ^:private apply-metas
   ([ns t default init-map]
    (apply-metas ns t init-map nil))
   ([ns t default init-map reader-map]
@@ -235,7 +235,7 @@
                 meta-data))))
 
 
-(defn  get-recursive
+(defn ^:private get-recursive
   [e]
   (let [m (meta e)]
     (reduce-kv
@@ -246,7 +246,7 @@
       {} m)))
 
 
-(defn  merge-recursive
+(defn ^:private merge-recursive
   [base rec sym]
   (reduce-kv
     (fn [m k {:keys [only except] :as v}]
@@ -266,7 +266,7 @@
     (or base {}) rec))
 
 
-(defn  conj-type
+(defn ^:private conj-type
   [a t default recursive]
   (try
     (conj a (apply-metas
@@ -285,7 +285,7 @@
                       {:anomaly :hodur/invalid-type} e)))))
 
 
-(defn  conj-params
+(defn ^:private conj-params
   [a t field r params default recursive]
   (reduce (fn [accum param]
             (try
@@ -308,7 +308,7 @@
           a params))
 
 
-(defn  conj-fields
+(defn ^:private conj-fields
   [a t fields default recursive]
   (loop [accum a
          field (first fields)
@@ -362,7 +362,7 @@
                (next next-fields))))))
 
 
-(defn  parse-types
+(defn ^:private parse-types
   [accum types]
   (let [has-default? (= (first types) 'default)
         real-types (if has-default? (next types) types)
@@ -382,14 +382,14 @@
         a))))
 
 
-(defn  parse-type-groups
+(defn ^:private parse-type-groups
   [accum type-groups]
   (reduce (fn [a type-group]
             (parse-types a type-group))
           accum
           type-groups))
 
-(defn  create-primitive-types
+(defn ^:private create-primitive-types
   [accum]
   (reduce (fn [a i]
             (try
@@ -407,19 +407,19 @@
           accum primary-types))
 
 
-(defn  internal-schema
+(defn internal-schema
   [source-schemas]
   (-> []
       create-primitive-types
       (parse-type-groups source-schemas)))
 
 ;;TODO
-(defn  is-schema-valid?
+(defn is-schema-valid?
   [schema]
   true)
 
 
-(defn  ensure-meta-db
+(defn ensure-meta-db
   [schema]
   #_(clojure.pprint/pprint schema)
   (let [conn (d/create-conn meta-schema)]
@@ -427,7 +427,7 @@
     conn))
 
 
-(defn  extend-meta-db
+(defn extend-meta-db
   [conn schema]
   #_(clojure.pprint/pprint schema)
   (d/transact! conn schema)
@@ -453,6 +453,14 @@
         schema (internal-schema source-schemas)]
     (if (is-schema-valid? schema)
       (ensure-meta-db schema))))
+
+;;; Fixme: 必須用以下init-db的方式，才能正確加入新的型別如Date等
+
+(defn init-db [source-schema & others]
+  (let [conn (ensure-meta-db [])
+        schema (->> (conj others source-schema)
+                    (internal-schema))]
+    (extend-meta-db conn schema)))
 
 
 #?(:clj

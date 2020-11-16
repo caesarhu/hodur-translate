@@ -11,9 +11,11 @@
 
 (defn get-field-translate-data [id-map]
   (let [{:keys [type/name translate/chinese field/_parent]} id-map
-        fields (map #(hash-map (->> (:field/name %)
-                                    ->kebab-case-string
-                                    (keyword name))
+        field-fn (fn [field f-key]
+                   (->> (f-key field)
+                        ->kebab-case-string
+                        (keyword name)))
+        fields (map #(hash-map (field-fn % :field/name)
                                (->> (:translate/chinese %)
                                     ->kebab-case-string
                                     (keyword chinese)))
@@ -23,7 +25,7 @@
 (defn ->name-map
   [conn]
   (let [selector '[* {:field/_parent [:field/name :translate/chinese]}]
-        eids (utils/user-ids conn :translate/tag)
+        eids (utils/user-eids conn :translate/tag)
         id-maps (d/pull-many @conn selector eids)]
     (->> (map get-field-translate-data id-maps)
          (apply merge))))

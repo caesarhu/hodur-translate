@@ -5,10 +5,11 @@
   :dependencies [[org.clojure/clojure "1.10.1"]
                  [duct/core "0.8.0"]
                  [duct/module.logging "0.5.0"]
-                 [hodur/engine "0.1.8"]
+                 [hodur/spec-schema "0.1.5"]
                  [datascript "1.0.1"]
                  [camel-snake-kebab "0.4.2"]
-                 [com.rpl/specter "1.1.3"]]
+                 [com.rpl/specter "1.1.3"]
+                 [spec-dict "0.2.1"]]
   :plugins [[duct/lein-duct "0.12.1"]]
   :main ^:skip-aot hodur-translate.main
   :resource-paths ["resources" "target/resources"]

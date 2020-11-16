@@ -1,10 +1,11 @@
 ;;; Hodur Engine origin schema
 (ns hodur-translate.meta-db
   (:require
-    [hodur-engine.core :as hodur]))
+    [hodur-translate.engine :as engine]
+    [hodur-translate.utils :as utils]))
 
 
-(def engine-schema
+(def meta-schema
   '[^{:lacinia/tag true
       :datomic/tag true
       :spec/tag true
@@ -62,31 +63,8 @@
        :translate/chinese "姓名"} name
      ^{:type String
        :optional true
-       :translate/chinese "備註"} memo]
-
-    ^{:translate/chinese "測試資料"}
-    test-data
-    [^{:type Integer
-       :datomic/unique :db.unique/identity
-       :translate/chinese "測試id"} id
-     ^{:type Date
-       :translate/chinese "日期"} test-date]])
-
-(def meta-schema
-  '[^{:lacinia/tag true
-      :datomic/tag true
-      :spec/tag true
-      :translate/tag true}
-    default
-
-    ^{:translate/chinese "測試資料"}
-    test-data
-    [^{:type Integer
-       :datomic/unique :db.unique/identity
-       :translate/chinese "測試id"} id
-     ^{:type DateTime
-       :translate/chinese "日期"} test-date]])
+       :translate/chinese "備註"} memo]])
 
 
 (def meta-db
-  (hodur/init-schema meta-schema))
+  (engine/init-db meta-schema))
