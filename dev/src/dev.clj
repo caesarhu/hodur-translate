@@ -20,7 +20,7 @@
     [integrant.core :as ig]
     [integrant.repl :refer [clear halt go init prep reset]]
     [integrant.repl.state :refer [config system]]
-    [spec-dict :refer [dict dict*]]))
+    [spec-tools.data-spec :as ds]))
 
 
 (duct/load-hierarchy)
@@ -34,11 +34,16 @@
   []
   (eftest/run-tests (eftest/find-tests "test")))
 
-(def spec-schema (hodur-spec/schema meta-db {:prefix :hodur-spec}))
-
 (def profiles
   [:duct.profile/dev :duct.profile/local])
 
+(def spec-schema (hodur-spec/schema meta-db {:prefix :hodur-spec}))
+
+(def spec-test
+  (->> spec-schema
+       (map rest)
+       (map #(apply hash-map %))
+       (apply merge)))
 
 (clojure.tools.namespace.repl/set-refresh-dirs "dev/src" "src" "test")
 

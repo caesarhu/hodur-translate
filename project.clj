@@ -9,7 +9,7 @@
                  [datascript "1.0.1"]
                  [camel-snake-kebab "0.4.2"]
                  [com.rpl/specter "1.1.3"]
-                 [spec-dict "0.2.1"]]
+                 [metosin/spec-tools "0.10.4"]]
   :plugins [[duct/lein-duct "0.12.1"]]
   :main ^:skip-aot hodur-translate.main
   :resource-paths ["resources" "target/resources"]
