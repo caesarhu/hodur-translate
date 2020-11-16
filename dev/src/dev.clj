@@ -20,7 +20,8 @@
     [integrant.core :as ig]
     [integrant.repl :refer [clear halt go init prep reset]]
     [integrant.repl.state :refer [config system]]
-    [spec-tools.data-spec :as ds]))
+    [com.rpl.specter :as sp]
+    [hodur-translate.data-spec :as ds]))
 
 
 (duct/load-hierarchy)
