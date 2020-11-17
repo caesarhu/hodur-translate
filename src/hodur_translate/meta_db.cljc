@@ -52,18 +52,49 @@
        :optional true
        :translate/chinese "備註"} memo]
 
-    ^{:translate/chinese "全部紀錄檔"}
+    ^{:translate/chinese "紀錄清單檔"}
     all-list
     [^{:type Integer
        :datomic/unique :db.unique/identity
-       :translate/chinese "全部紀錄檔id"} id
+       :translate/chinese "紀錄清單檔id"} id
      ^{:type Integer
        :datomic/index true
        :translate/chinese "items-id參考"} items-id
      ^{:type String
+       :datomic/index true
        :translate/chinese "項目"} item
      ^{:type Integer
        :translate/chinese "數量"} quantity]
+
+    ^{:translate/chinese "項目清單檔"}
+    item-list
+    [^{:type Integer
+       :datomic/unique :db.unique/identity
+       :translate/chinese "項目清單檔id"} id
+     ^{:type Integer
+       :datomic/index true
+       :translate/chinese "items-id參考"} items-id
+     ^{:type String
+       :translate/chinese "種類"} kind
+     ^{:type String
+       :translate/chinese "類別"} subkind
+     ^{:type String
+       :translate/chinese "物品"} object]
+
+    ^{:translate/chinese "項目人數檔"}
+    item-people
+    [^{:type Integer
+       :datomic/unique :db.unique/identity
+       :translate/chinese "項目人數檔id"} id
+     ^{:type Integer
+       :datomic/index true
+       :translate/chinese "items-id參考"} items-id
+     ^{:type String
+       :translate/chinese "種類"} kind
+     ^{:type Integer
+       :translate/chinese "件數"} piece
+     ^{:type Integer
+       :translate/chinese "人數"} people]
 
     ^{:translate/chinese "單位檔"}
     units
