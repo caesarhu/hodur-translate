@@ -23,12 +23,10 @@
     [cjsauer.disqualified :refer [qualify-map unqualify-map]]
     [clojure.spec.alpha :as s]
     [com.rpl.specter :as sp]
-    [spec-tools.data-spec :as data-spec]
+    [hodur-translate.datomic-schema :as datomic]
     [hodur-translate.data-spec :as ds]
-    [spec-dict :refer [dict dict*]]
-    [java-time :as jt]
-    [cljstyle.format.core :as cf]
-    [cljstyle.config :as config]))
+    [spec-tools.core :as st]
+    [java-time :as jt]))
 
 
 (duct/load-hierarchy)
@@ -52,6 +50,12 @@
        (map rest)
        (map #(apply hash-map %))
        (apply merge)))
+
+(defn fit-spec
+  ([spec value transformer]
+   (st/conform spec value transformer))
+  ([spec value]
+   (fit-spec spec value st/strip-extra-keys-transformer)))
 
 
 (clojure.tools.namespace.repl/set-refresh-dirs "dev/src" "src" "test")

@@ -114,10 +114,6 @@
   ([meta-db]
    (schema meta-db false)))
 
-(defmacro defspecs
-  [s]
-  (mapv (fn [form] form)
-        s))
 
 
 

@@ -26,10 +26,12 @@
      ^{:type DateTime
        :translate/chinese "查獲時間"} check-time
      ^{:type String
+       :optional true
        :translate/chinese "飛機班次"} flight
      ^{:type String
        :translate/chinese "單位"} unit
      ^{:type String
+       :optional true
        :translate/chinese "子單位"} subunit
      ^{:type String
        :translate/chinese "查獲員警"} police
@@ -43,10 +45,47 @@
      ^{:type String
        :optional true
        :translate/chinese "貨運業者簽名"} trader-sign
-     ^String ip
+     ^{:type String
+       :optional true
+       :translate/chinese "輸入設備IP"} ip
      ^{:type String
        :optional true
        :translate/chinese "備註"} memo]
+
+    ^{:translate/chinese "全部紀錄檔"}
+    all-list
+    [^{:type Integer
+       :datomic/unique :db.unique/identity
+       :translate/chinese "全部紀錄檔id"} id
+     ^{:type Integer
+       :datomic/index true
+       :translate/chinese "items-id參考"} items-id
+     ^{:type String
+       :translate/chinese "項目"} item
+     ^{:type Integer
+       :translate/chinese "數量"} quantity]
+
+    ^{:translate/chinese "單位檔"}
+    units
+    [^{:type Integer
+       :datomic/unique :db.unique/identity
+       :translate/chinese "單位檔id"} id
+     ^{:type String
+       :translate/chinese "單位"} unit
+     ^{:type String
+       :translate/chinese "子單位"} subunit]
+
+    ^{:translate/chinese "檔案最後時間檔"}
+    last-time
+    [^{:type DateTime
+       :datomic/unique :db.unique/identity
+       :translate/chinese "最後時間"} file-time
+     ^{:type Integer
+       :translate/chinese "全部處理紀錄"} total
+     ^{:type Integer
+       :translate/chinese "處理成功紀錄"} success
+     ^{:type Integer
+       :translate/chinese "處理失敗紀錄"} fail]
 
     ^{:translate/chinese "郵件列表檔"}
     mail-list
