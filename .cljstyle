@@ -1,2 +1,3 @@
 {:files
- {:extensions #{"cljc" "cljs" "clj" "cljx" "edn"}, :ignore #{".hg" ".git" "target"}}}
+ {:extensions #{"cljc" "cljs" "clj" "edn" "cljx"},
+  :ignore #{".hg" "target" ".git"}}}

@@ -4,11 +4,40 @@
     [clojure.string :as string]
     [datascript.core :as d]
     [datascript.query-v3 :as q]
-    [hodur-translate.engine :as engine]))
+    [clojure.pprint :refer [pprint]]
+    [hodur-translate.engine :as engine]
+    [cljstyle.format.core :as cf]
+    [cljstyle.config :as config])
+  (:import (java.io StringWriter)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Topological Sorting
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defn pretty-format [obj]
+  (with-open [w (StringWriter.)]
+    (binding [*out* w]
+      (pprint obj *out*)
+      (str w))))
+
+(def default-cljstyle
+  (:rules config/default-config))
+
+(defn cljstyle-str [s]
+  (cf/reformat-string s default-cljstyle))
+
+(defn pretty-str [obj]
+  (-> obj
+      pretty-format
+      cljstyle-str))
+
+(defn spit-code [file obj-v]
+  (let [out-v (map pretty-str obj-v)
+        out-line (map #(vector %1 %2) out-v (repeat "\n\n"))
+        out-str (->> out-line
+                     flatten
+                     (apply str))]
+    (spit file out-str)))
 
 (defn ^:private without
   "Returns set s with x removed."
