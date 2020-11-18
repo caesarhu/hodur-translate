@@ -15,7 +15,7 @@
     ^{:translate/chinese "危安物品檔"}
     items
     [^{:type Integer
-       :postgres/unique :db.unique/identity
+       :postgres/primary-key true
        :spec/override clojure.core/pos-int?
        :translate/chinese "危安物品id"} id
      ^{:type String
@@ -56,13 +56,15 @@
     ^{:translate/chinese "紀錄清單檔"}
     all-list
     [^{:type Integer
-       :postgres/unique :db.unique/identity
+       :postgres/primary-key true
        :spec/override clojure.core/pos-int?
        :translate/chinese "紀錄清單檔id"} id
      ^{:type items
        :postgres/index true
        :cardinality [0 1]
        :spec/override clojure.core/pos-int?
+       :postgres/ref-update :cascade
+       :postgres/ref-delete :cascade
        :translate/chinese "items-id參考"} items-id
      ^{:type String
        :postgres/index true
@@ -73,13 +75,15 @@
     ^{:translate/chinese "項目清單檔"}
     item-list
     [^{:type Integer
-       :postgres/unique :db.unique/identity
+       :postgres/primary-key true
        :spec/override clojure.core/pos-int?
        :translate/chinese "項目清單檔id"} id
      ^{:type items
        :postgres/index true
        :cardinality [0 1]
        :spec/override clojure.core/pos-int?
+       :postgres/ref-update :cascade
+       :postgres/ref-delete :cascade
        :translate/chinese "items-id參考"} items-id
      ^{:type String
        :translate/chinese "種類"} kind
@@ -91,13 +95,15 @@
     ^{:translate/chinese "項目人數檔"}
     item-people
     [^{:type Integer
-       :postgres/unique :db.unique/identity
+       :postgres/primary-key true
        :spec/override clojure.core/pos-int?
        :translate/chinese "項目人數檔id"} id
      ^{:type items
        :postgres/index true
        :cardinality [0 1]
        :spec/override clojure.core/pos-int?
+       :postgres/ref-update :cascade
+       :postgres/ref-delete :cascade
        :translate/chinese "items-id參考"} items-id
      ^{:type String
        :translate/chinese "種類"} kind
@@ -109,7 +115,7 @@
     ^{:translate/chinese "單位檔"}
     units
     [^{:type Integer
-       :postgres/unique :db.unique/identity
+       :postgres/primary-key true
        :spec/override clojure.core/pos-int?
        :translate/chinese "單位檔id"} id
      ^{:type String
@@ -120,7 +126,7 @@
     ^{:translate/chinese "檔案最後時間檔"}
     last-time
     [^{:type DateTime
-       :postgres/unique :db.unique/identity
+       :postgres/primary-key true
        :translate/chinese "最後時間"} file-time
      ^{:type Integer
        :translate/chinese "全部處理紀錄"} total
@@ -132,7 +138,7 @@
     ^{:translate/chinese "郵件列表檔"}
     mail-list
     [^{:type Integer
-       :postgres/unique :db.unique/identity
+       :postgres/primary-key true
        :spec/override clojure.core/pos-int?
        :translate/chinese "郵件列表id"} id
      ^{:type String

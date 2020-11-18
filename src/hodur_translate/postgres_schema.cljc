@@ -1,6 +1,6 @@
 (ns hodur-translate.postgres-schema
   (:require
-    [camel-snake-kebab.core :refer [->kebab-case-string]]
+    [camel-snake-kebab.core :refer [->kebab-case-string ->snake_case_string ->SCREAMING_SNAKE_CASE_STRING]]
     [datascript.core :as d]
     [datascript.query-v3 :as q]
     #?(:clj  [com.rpl.specter :as sp]
@@ -18,19 +18,19 @@
               (or dat-type ref-type))))
 
 
-(defmethod primitive-or-ref-type "String" [_] :db.type/string)
+(defmethod primitive-or-ref-type "String" [_] :postgres.type/text)
 
-(defmethod primitive-or-ref-type "Float" [_] :db.type/float)
+(defmethod primitive-or-ref-type "Float" [_] :postgres.type/decimal)
 
-(defmethod primitive-or-ref-type "Integer" [_] :db.type/long)
+(defmethod primitive-or-ref-type "Integer" [_] :postgres.type/bigint)
 
-(defmethod primitive-or-ref-type "Boolean" [_] :db.type/boolean)
+(defmethod primitive-or-ref-type "Boolean" [_] :postgres.type/boolean)
 
-(defmethod primitive-or-ref-type "DateTime" [_] :db.type/date-time)
+(defmethod primitive-or-ref-type "DateTime" [_] :postgres.type/timestamp)
 
-(defmethod primitive-or-ref-type "ID" [_] :db.type/uuid)
+(defmethod primitive-or-ref-type "ID" [_] :postgres.type/uuid)
 
-(defmethod primitive-or-ref-type :default [_] :db.type/ref)
+(defmethod primitive-or-ref-type :default [_] :postgres.type/ref)
 
 
 (defn  get-value-type
@@ -40,19 +40,15 @@
     (primitive-or-ref-type field)))
 
 (defn get-identity [type]
-  (let [fields (get type :field/_parent)]
-    (some #(and (= :db.unique/identity (:postgres/unique %))
-                {:postgres/ref (keyword (name (:type/name type)) (:field/name %))
-                 :db/valueType (get-value-type %)})
-          fields)))
+  (let [fields (get type :field/_parent)
+        primary-field (sp/select-one [sp/ALL #(:postgres/primary-key %)] fields)]
+    (when primary-field
+      {:postgres/ref (keyword (name (:type/name type)) (:field/name primary-field))
+       :db/valueType (get-value-type primary-field)})))
 
 (defn get-type-identity [types type-name]
-  (let [type (sp/select-one [sp/ALL #(= type-name (:type/name %))] types)
-        fields (get type :field/_parent)]
-    (some #(and (= :db.unique/identity (:postgres/unique %))
-                {:postgres/ref (keyword (name type-name) (:field/name %))
-                 :db/valueType (get-value-type %)})
-          fields)))
+  (some-> (sp/select-one [sp/ALL #(= type-name (:type/name %))] types)
+          get-identity))
 
 
 (defn  get-cardinality
@@ -76,19 +72,23 @@
     m))
 
 
+(def postgres-translate-table
+  {:postgres/index  :postgres/index
+   :postgres/unique :postgres.constraint/unique
+   :postgres/primary-key :postgres.constraint/primary-key
+   :postgres/auto-increment :postgres/auto-increment
+   :postgres/ref :postgres/ref
+   :postgres/ref-update :postgres/ref-update
+   :postgres/ref-delete :postgres/ref-delete
+   :field/optional  :postgres.constraint/optional})
+
 (defn  assoc-attributes
   [m field]
-  (let [table {:postgres/isComponent :db/isComponent
-               :postgres/fulltext :db/fulltext
-               :postgres/index :db/index
-               :postgres/unique :db/unique
-               :postgres/noHistory :db/noHistory
-               :field/optional :postgres/optional}]
-    (reduce-kv (fn [a k v]
-                 (if-let [entry (get table k)]
-                   (assoc a entry v)
-                   a))
-               m field)))
+  (reduce-kv (fn [a k v]
+               (if-let [entry (get postgres-translate-table k)]
+                 (assoc a entry v)
+                 a))
+             m field))
 
 
 (defn postgres-process-field
@@ -99,7 +99,7 @@
       (not is-enum?) (assoc :db/valueType (get-value-type field)
                             :db/cardinality (get-cardinality field))
       (not is-enum?) (assoc-attributes field)
-      (= :db.type/ref (get-value-type field)) (merge (get-type-identity types ref-type))
+      (= :postgres.type/ref (get-value-type field)) (merge (get-type-identity types ref-type))
 
       :always        (assoc-documentation field))))
 
@@ -114,6 +114,38 @@
                      (conj c (postgres-process-field types entity-id enum field))
                      c))
                  []))))
+
+(def postgres-sql-column-table
+  {:postgres.constraint/optional    (fn [s v]
+                                      (if v
+                                        (str s " NOT NULL")
+                                        s))
+   :postgres/auto-increment         (fn [s v]
+                                      (if v
+                                        (str s " GENERATED ALWAYS AS IDENTITY")
+                                        s))
+   :postgres.constraint/unique      (fn [s v]
+                                      (if v
+                                        (str s " UNIQUE")
+                                        s))
+   :postgres.constraint/primary-key (fn [s v]
+                                      (if v
+                                        (str s " PRIMARY KEY")
+                                        s))
+   :postgres/ref                    (fn [s v]
+                                      (if v
+                                        (let [table (-> v namespace ->snake_case_string)
+                                              column (-> v name ->snake_case_string)]
+                                          (str s " REFERENCES " table " (" column ")")))
+                                      s)
+   :postgres/ref-update             (fn [s v]
+                                      (if (keyword? v)
+                                        (str s " ON UPDATE " (-> v name ->SCREAMING_SNAKE_CASE_STRING))
+                                        s))
+   :postgres/ref-delete             (fn [s v]
+                                      (if (keyword? v)
+                                        (str s " ON DELETE " (-> v name ->SCREAMING_SNAKE_CASE_STRING))
+                                        s))})
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Public functions
@@ -156,13 +188,13 @@
                      :doc "Has documentation"
                      :deprecation "But also deprecation"}
                    co-workers
-                   ^{:postgres/type :db.type/keyword}
+                   ^{:postgres/type :postgres.type/keyword}
                    keyword-type
-                   ^{:postgres/type :db.type/uri}
+                   ^{:postgres/type :postgres.type/uri}
                    uri-type
-                   ^{:postgres/type :db.type/double}
+                   ^{:postgres/type :postgres.type/double}
                    double-type
-                   ^{:postgres/type :db.type/bigdec
+                   ^{:postgres/type :postgres.type/bigdec
                      :deprecation "This is deprecated"}
                    bigdec-type
                    ^EmploymentType employment-type
