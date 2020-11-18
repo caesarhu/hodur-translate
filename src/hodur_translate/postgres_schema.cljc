@@ -2,7 +2,9 @@
   (:require
     [camel-snake-kebab.core :refer [->kebab-case-string]]
     [datascript.core :as d]
-    [datascript.query-v3 :as q]))
+    [datascript.query-v3 :as q]
+    #?(:clj  [com.rpl.specter :as sp]
+       :cljs [com.rpl.specter :as s :refer-macros [select transform setval]])))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Parsing functions
