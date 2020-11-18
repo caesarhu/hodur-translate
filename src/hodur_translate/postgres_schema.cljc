@@ -4,7 +4,8 @@
     [datascript.core :as d]
     [datascript.query-v3 :as q]
     #?(:clj  [com.rpl.specter :as sp]
-       :cljs [com.rpl.specter :as s :refer-macros [select transform setval]])))
+       :cljs [com.rpl.specter :as s :refer-macros [select select-one transform setval]])
+    [hodur-translate.utils :as utils]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Parsing functions
@@ -38,19 +39,15 @@
     dat-type
     (primitive-or-ref-type field)))
 
-(defn get-type-identity [conn type-name]
-  (let [selector '[* {:field/_parent
-                      [* {:field/type [*]}]}]
-        eids (-> (d/q '[:find [?e ...]
-                        :in $ ?type-name
-                        :where
-                        [?e :type/name ?type-name]]
-                      @conn (name type-name))
-                 vec flatten)
-        type (->> eids
-                  (d/pull-many @conn selector)
-                  (sort-by :type/name)
-                  first)
+(defn get-identity [type]
+  (let [fields (get type :field/_parent)]
+    (some #(and (= :db.unique/identity (:postgres/unique %))
+                {:postgres/ref (keyword (name (:type/name type)) (:field/name %))
+                 :db/valueType (get-value-type %)})
+          fields)))
+
+(defn get-type-identity [types type-name]
+  (let [type (sp/select-one [sp/ALL #(= type-name (:type/name %))] types)
         fields (get type :field/_parent)]
     (some #(and (= :db.unique/identity (:postgres/unique %))
                 {:postgres/ref (keyword (name type-name) (:field/name %))
@@ -85,7 +82,8 @@
                :postgres/fulltext :db/fulltext
                :postgres/index :db/index
                :postgres/unique :db/unique
-               :postgres/noHistory :db/noHistory}]
+               :postgres/noHistory :db/noHistory
+               :field/optional :postgres/optional}]
     (reduce-kv (fn [a k v]
                  (if-let [entry (get table k)]
                    (assoc a entry v)
@@ -93,25 +91,27 @@
                m field)))
 
 
-(defn  process-field
-  [entity-id is-enum? {:keys [field/name] :as field}]
-  (cond-> {:db/ident (keyword entity-id
-                              (->kebab-case-string name))}
-          (not is-enum?) (assoc :db/valueType (get-value-type field)
-                                :db/cardinality (get-cardinality field))
-          (not is-enum?) (assoc-attributes field)
+(defn postgres-process-field
+  [types entity-id is-enum? {:keys [field/name] :as field}]
+  (let [ref-type (-> field :field/type :type/name)]
+    (cond-> {:db/ident (keyword entity-id
+                                (->kebab-case-string name))}
+      (not is-enum?) (assoc :db/valueType (get-value-type field)
+                            :db/cardinality (get-cardinality field))
+      (not is-enum?) (assoc-attributes field)
+      (= :db.type/ref (get-value-type field)) (merge (get-type-identity types ref-type))
 
-          :always        (assoc-documentation field)))
+      :always        (assoc-documentation field))))
 
 
-(defn  get-type
-  [{:keys [type/name type/enum field/_parent]}]
+(defn postgres-get-type
+  [types {:keys [type/name type/enum field/_parent]}]
   (let [entity-id (->kebab-case-string name)]
     (->> _parent
          (sort-by :field/name)
          (reduce (fn [c {:keys [postgres/tag] :as field}]
                    (if tag
-                     (conj c (process-field entity-id enum field))
+                     (conj c (postgres-process-field types entity-id enum field))
                      c))
                  []))))
 
@@ -121,22 +121,10 @@
 
 (defn schema
   [conn]
-  (let [selector '[* {:field/_parent
-                      [* {:field/type [*]}]}]
-        eids (-> (q/q '[:find ?e
-                        :where
-                        [?e :postgres/tag true]
-                        [?e :type/nature :user]
-                        (not [?e :type/interface true])
-                        (not [?e :type/union true])]
-                      @conn)
-                 vec flatten)
-        types (->> eids
-                   (d/pull-many @conn selector)
-                   (sort-by :type/name))]
+  (let [types (utils/get-eids-types conn :postgres/tag)]
     (->> types
          (reduce (fn [c t]
-                   (concat c (get-type t)))
+                   (concat c (postgres-get-type types t)))
                  [])
          vec)))
 

@@ -71,21 +71,15 @@
                    (sort-by :type/name))]
     types))
 
-(defn get-type-identity [conn type-name]
-  (let [selector '[* {:field/_parent
-                      [* {:field/type [*]}]}]
-        eids (-> (d/q '[:find [?e ...]
-                        :in $ ?type-name
-                        :where
-                        [?e :type/name ?type-name]]
-                      @conn (name type-name))
-                 vec flatten)
-        type (->> eids
-                  (d/pull-many @conn selector)
-                  (sort-by :type/name)
-                  first)
-        fields (get type :field/_parent)]
-    (map postgres/get-value-type fields)))
+(def query
+  '[:find [?id ...]
+    :where
+    [?e :type/nature :user]
+    [?e :field/_parent ?f]
+    [?f [:field/name] ?id]])
+
+(defn q-test [query]
+  (d/q query @meta-db))
 
 
 (clojure.tools.namespace.repl/set-refresh-dirs "dev/src" "src" "test")
