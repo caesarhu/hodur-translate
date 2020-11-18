@@ -1,10 +1,11 @@
 (ns hodur-translate.data-spec
   (:require
-    [clojure.spec.alpha :as s]
     [cjsauer.disqualified :refer [qualify-map unqualify-map]]
-    [hodur-translate.spec-schema :as spec]
+    [clojure.spec.alpha :as s]
     #?(:clj  [com.rpl.specter :as sp]
-       :cljs [com.rpl.specter :as s :refer-macros [select transform setval]])))
+       :cljs [com.rpl.specter :as s :refer-macros [select transform setval]])
+    [hodur-translate.spec-schema :as spec]))
+
 
 (def clojure-def 'def)
 
@@ -21,8 +22,10 @@
 (def spec-opt-key :opt-un)
 (def data-req-map {:opt-un data-spec-opt}) ;;;  req default true
 
-(defn switch-symbol [m from to]
+(defn switch-symbol
+  [m from to]
   (sp/setval [(sp/walker #(= from %))] to m))
+
 
 (defn data-key-sym
   ([k sym]
@@ -30,8 +33,11 @@
      (list sym k)
      k)))
 
-(defn data-spec-sym [m sym]
+
+(defn data-spec-sym
+  [m sym]
   (sp/transform [sp/MAP-KEYS] #(data-key-sym % sym) m))
+
 
 (defn unqualify-if
   ([m qualify?]
@@ -40,6 +46,7 @@
      (unqualify-map m)))
   ([m]
    (unqualify-if m false)))
+
 
 (defn process-fields
   ([m fields qualify?]
@@ -54,6 +61,7 @@
   ([m fields]
    (process-fields m fields false)))
 
+
 (defn update-spec-keys
   ([m s qualify?]
    (let [s-vec (partition 2 (rest s))]
@@ -63,11 +71,13 @@
   ([m s]
    (update-spec-keys m s false)))
 
+
 (defn transform-vec
   ([m qualify?]
    (sp/transform [(sp/walker #(and (seq? %) (= spec-keys-symbol (first %))))] #(update-spec-keys m % qualify?) m))
   ([m]
    (transform-vec m false)))
+
 
 (defn ->data-spec*
   ([m qualify?]
@@ -80,16 +90,21 @@
   ([m]
    (->data-spec* m false)))
 
-(defn generate-data [m mk]
+
+(defn generate-data
+  [m mk]
   (let [mkm (get m mk)]
     (list clojure-def (symbol mk) mkm)))
 
-(defn generate-spec [mk]
+
+(defn generate-spec
+  [mk]
   (let [data-name (symbol mk)
         spec-name (symbol (str "spec-" data-name))
         key-name (symbol (str "::" data-name))]
     (list clojure-def spec-name
           (list data-spec-symbol key-name data-name))))
+
 
 (defn spec->data-spec
   ([m qualify?]
@@ -101,8 +116,11 @@
   ([m]
    (spec->data-spec m false)))
 
-(defn ^:private eval-default-prefix []
+
+(defn ^:private eval-default-prefix
+  []
   (eval '(str (ns-name *ns*))))
+
 
 (defn schema
   ([meta-db qualify?]
@@ -113,7 +131,5 @@
      (spec->data-spec raw-map qualify?)))
   ([meta-db]
    (schema meta-db false)))
-
-
 
 

@@ -7,7 +7,7 @@
 
 (def meta-schema
   '[^{:lacinia/tag true
-      :datomic/tag true
+      :postgres/tag true
       :spec/tag true
       :translate/tag true}
     default
@@ -15,7 +15,8 @@
     ^{:translate/chinese "危安物品檔"}
     items
     [^{:type Integer
-       :datomic/unique :db.unique/identity
+       :postgres/unique :db.unique/identity
+       :spec/override clojure.core/pos-int?
        :translate/chinese "危安物品id"} id
      ^{:type String
        :translate/chinese "原始檔案"} file
@@ -55,13 +56,16 @@
     ^{:translate/chinese "紀錄清單檔"}
     all-list
     [^{:type Integer
-       :datomic/unique :db.unique/identity
+       :postgres/unique :db.unique/identity
+       :spec/override clojure.core/pos-int?
        :translate/chinese "紀錄清單檔id"} id
-     ^{:type Integer
-       :datomic/index true
+     ^{:type items
+       :postgres/index true
+       :cardinality [0 1]
+       :spec/override clojure.core/pos-int?
        :translate/chinese "items-id參考"} items-id
      ^{:type String
-       :datomic/index true
+       :postgres/index true
        :translate/chinese "項目"} item
      ^{:type Integer
        :translate/chinese "數量"} quantity]
@@ -69,10 +73,13 @@
     ^{:translate/chinese "項目清單檔"}
     item-list
     [^{:type Integer
-       :datomic/unique :db.unique/identity
+       :postgres/unique :db.unique/identity
+       :spec/override clojure.core/pos-int?
        :translate/chinese "項目清單檔id"} id
-     ^{:type Integer
-       :datomic/index true
+     ^{:type items
+       :postgres/index true
+       :cardinality [0 1]
+       :spec/override clojure.core/pos-int?
        :translate/chinese "items-id參考"} items-id
      ^{:type String
        :translate/chinese "種類"} kind
@@ -84,10 +91,13 @@
     ^{:translate/chinese "項目人數檔"}
     item-people
     [^{:type Integer
-       :datomic/unique :db.unique/identity
+       :postgres/unique :db.unique/identity
+       :spec/override clojure.core/pos-int?
        :translate/chinese "項目人數檔id"} id
-     ^{:type Integer
-       :datomic/index true
+     ^{:type items
+       :postgres/index true
+       :cardinality [0 1]
+       :spec/override clojure.core/pos-int?
        :translate/chinese "items-id參考"} items-id
      ^{:type String
        :translate/chinese "種類"} kind
@@ -99,7 +109,8 @@
     ^{:translate/chinese "單位檔"}
     units
     [^{:type Integer
-       :datomic/unique :db.unique/identity
+       :postgres/unique :db.unique/identity
+       :spec/override clojure.core/pos-int?
        :translate/chinese "單位檔id"} id
      ^{:type String
        :translate/chinese "單位"} unit
@@ -109,7 +120,7 @@
     ^{:translate/chinese "檔案最後時間檔"}
     last-time
     [^{:type DateTime
-       :datomic/unique :db.unique/identity
+       :postgres/unique :db.unique/identity
        :translate/chinese "最後時間"} file-time
      ^{:type Integer
        :translate/chinese "全部處理紀錄"} total
@@ -121,15 +132,18 @@
     ^{:translate/chinese "郵件列表檔"}
     mail-list
     [^{:type Integer
-       :datomic/unique :db.unique/identity
+       :postgres/unique :db.unique/identity
+       :spec/override clojure.core/pos-int?
        :translate/chinese "郵件列表id"} id
      ^{:type String
        :translate/chinese "單位"} unit
      ^{:type String
        :translate/chinese "子單位"} subunit
      ^{:type String
+       :optional true
        :translate/chinese "職稱"} position
      ^{:type String
+       :optional true
        :translate/chinese "姓名"} name
      ^{:type String
        :optional true

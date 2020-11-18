@@ -6,10 +6,12 @@
        :cljs [com.rpl.specter :as s :refer-macros [select transform]])
     [datascript.core :as d]
     [datascript.query-v3 :as q]
-    [hodur-translate.utils :as utils]
-    [hodur-translate.bimap :as bi]))
+    [hodur-translate.bimap :as bi]
+    [hodur-translate.utils :as utils]))
 
-(defn get-field-translate-data [id-map]
+
+(defn get-field-translate-data
+  [id-map]
   (let [{:keys [type/name translate/chinese field/_parent]} id-map
         field-fn (fn [field f-key]
                    (->> (f-key field)
@@ -21,6 +23,7 @@
                                     (keyword chinese)))
                     _parent)]
     (reduce merge {(keyword name) (keyword chinese)} fields)))
+
 
 (defn ->name-map
   [conn]

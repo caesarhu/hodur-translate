@@ -1,43 +1,53 @@
 (ns hodur-translate.utils
   (:require
+    [cljstyle.config :as config]
+    [cljstyle.format.core :as cf]
     [clojure.set :refer [difference union intersection]]
+    [clojure.pprint :refer [pprint]]
     [clojure.string :as string]
     [datascript.core :as d]
-    [datascript.query-v3 :as q]
-    [clojure.pprint :refer [pprint]]
-    [hodur-translate.engine :as engine]
-    [cljstyle.format.core :as cf]
-    [cljstyle.config :as config])
-  (:import (java.io StringWriter)))
+    [datascript.query-v3 :as q])
+  (:import
+    (java.io
+      StringWriter)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Topological Sorting
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defn pretty-format [obj]
+(defn pretty-format
+  [obj]
   (with-open [w (StringWriter.)]
     (binding [*out* w]
       (pprint obj *out*)
       (str w))))
 
+
 (def default-cljstyle
   (:rules config/default-config))
 
-(defn cljstyle-str [s]
+
+(defn cljstyle-str
+  [s]
   (cf/reformat-string s default-cljstyle))
 
-(defn pretty-str [obj]
+
+(defn pretty-str
+  [obj]
   (-> obj
       pretty-format
       cljstyle-str))
 
-(defn spit-code [file obj-v]
+
+(defn spit-code
+  [file obj-v]
   (let [out-v (map pretty-str obj-v)
         out-line (map #(vector %1 %2) out-v (repeat "\n\n"))
         out-str (->> out-line
                      flatten
                      (apply str))]
     (spit file out-str)))
+
 
 (defn ^:private without
   "Returns set s with x removed."
@@ -84,6 +94,7 @@
            g' (reduce #(update-in % [n] without %2) g m)]
        (recur g' (conj l n) (union s' (intersection (no-incoming g') m)))))))
 
+
 (def all-types
   '[:find [(pull ?t [* {:type/implements [*]
                         :field/_parent
@@ -93,8 +104,11 @@
     :where
     [?t :type/name]])
 
-(defn get-all-types [conn]
+
+(defn get-all-types
+  [conn]
   (d/q all-types @conn))
+
 
 (defn user-eids
   ([conn tag]
@@ -117,6 +131,7 @@
          vec flatten)))
   ([conn]
    (user-eids conn nil)))
+
 
 (defn get-eids-types
   ([conn tag]
@@ -147,6 +162,7 @@
             :where
             [?e]]
           @conn))))
+
 
 (defn ^:private dependency-direction->where
   "This function creates a datalog where clause out of a depdency

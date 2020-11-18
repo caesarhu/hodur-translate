@@ -18,12 +18,15 @@
          JarEntry
          JarFile))))
 
+
 (def primary-types
   '[String Float Integer Boolean DateTime ID Date])
+
 
 (def ^:private temp-id-counter (atom 0))
 
 (def ^:private temp-id-map (atom {}))
+
 
 (def ^:private meta-schema
   {;;general meta nodes
@@ -389,6 +392,7 @@
           accum
           type-groups))
 
+
 (defn ^:private create-primitive-types
   [accum]
   (reduce (fn [a i]
@@ -456,7 +460,8 @@
 
 ;;; Fixme: 必須用以下init-db的方式，才能正確加入新的型別如Date等
 
-(defn init-db [source-schema & others]
+(defn init-db
+  [source-schema & others]
   (let [conn (ensure-meta-db [])
         schema (->> (conj others source-schema)
                     (internal-schema))]
