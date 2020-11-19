@@ -1,6 +1,12 @@
-(defproject hodur-translate "0.1.0-SNAPSHOT"
-  :description "FIXME: write description"
-  :url "http://example.com/FIXME"
+(defproject hodur-translate "0.1.0"
+  :description "hodur plugins, postgres supported"
+  :url "https://github.com/caesarhu/hodur-translate.git"
+  :license {:name "Apache License, Version 2.0."
+            :url "https://www.apache.org/licenses/LICENSE-2.0"}
+  :deploy-repositories [["releases" :clojars
+                         :creds :gpg]
+                        ["snapshots" :clojars
+                         :creds :gpg]]
   :min-lein-version "2.0.0"
   :dependencies [[org.clojure/clojure "1.10.1"]
                  [duct/core "0.8.0"]
