@@ -3,6 +3,7 @@
     [camel-snake-kebab.core :refer [->kebab-case-string ->snake_case_string ->SCREAMING_SNAKE_CASE_STRING]]
     [datascript.core :as d]
     [datascript.query-v3 :as q]
+    [clojure.string :as string]
     #?(:clj  [com.rpl.specter :as sp]
        :cljs [com.rpl.specter :as s :refer-macros [select select-one transform setval]])
     [hodur-translate.utils :as utils]))
@@ -115,9 +116,9 @@
                      c))
                  []))))
 
-(def postgres-sql-column-table
+(def postgres-sql-column-options
   {:postgres.constraint/optional    (fn [s v]
-                                      (if v
+                                      (if-not v
                                         (str s " NOT NULL")
                                         s))
    :postgres/auto-increment         (fn [s v]
@@ -133,11 +134,9 @@
                                         (str s " PRIMARY KEY")
                                         s))
    :postgres/ref                    (fn [s v]
-                                      (if v
-                                        (let [table (-> v namespace ->snake_case_string)
-                                              column (-> v name ->snake_case_string)]
-                                          (str s " REFERENCES " table " (" column ")")))
-                                      s)
+                                      (if (keyword? v)
+                                        (str s " REFERENCES " (namespace v) " (" (name v) ")")
+                                        s))
    :postgres/ref-update             (fn [s v]
                                       (if (keyword? v)
                                         (str s " ON UPDATE " (-> v name ->SCREAMING_SNAKE_CASE_STRING))
@@ -147,19 +146,132 @@
                                         (str s " ON DELETE " (-> v name ->SCREAMING_SNAKE_CASE_STRING))
                                         s))})
 
+(defn get-sql-table [schema]
+  (-> schema :db/ident namespace keyword))
+
+(defn get-sql-table-snake [schema]
+  (-> schema :db/ident namespace ->snake_case_string))
+
+(defn get-sql-column [schema]
+  (-> schema :db/ident name ->snake_case_string))
+
+(defn get-sql-column-type [schema]
+  (-> schema :db/valueType name ->SCREAMING_SNAKE_CASE_STRING))
+
+(defn group-schema [schema]
+  (let [table-keys (->> (map get-sql-table schema)
+                        set)
+        table-map (zipmap table-keys (repeat []))]
+    (reduce (fn [res m]
+              (let [table (get-sql-table m)]
+                (update res table conj m)))
+            table-map
+            schema)))
+
+(def sql-column-options
+  [:postgres.constraint/optional :postgres/auto-increment :postgres.constraint/unique
+   :postgres.constraint/primary-key :postgres/ref :postgres/ref-update :postgres/ref-delete])
+
+(defn make-sql-column [schema]
+  (let [column-origin (str (get-sql-column schema) " " (get-sql-column-type schema))]
+    (reduce (fn [res k]
+              (let [f (get postgres-sql-column-options k)
+                    val (get schema k)]
+                (f res val)))
+            column-origin
+            sql-column-options)))
+
+(defn make-column-index [schema]
+  (when (:postgres/index schema)
+    (let [table (get-sql-table-snake schema)
+          column (get-sql-column schema)]
+      [(symbol "--;;")
+       (->> (str "CREATE INDEX " table "_" column "_index ON " table " (" column ") ;")
+            symbol)])))
+
+(defn make-sql-table [postgres-schema table-key]
+  (let [table (-> table-key name ->snake_case_string)
+        columns (get-in postgres-schema [table-key :column])
+        create-header (str "CREATE TABLE " table)
+        drop-header (str "DROP TABLE " table " ;")
+        column-def (let [str-v (map make-sql-column columns)
+                         header (-> (map #(str % " ,") (drop-last str-v))
+                                    vec)]
+                     (apply list (conj header (last str-v))))
+        index-def (->> (map make-column-index columns)
+                       (filter some?)
+                       (apply concat))]
+    {:create-table (sp/transform [(sp/walker string?)]
+                                 symbol
+                                 (concat [create-header column-def ";"] index-def))
+     :drop-table [(symbol drop-header)]}))
+
+(defn make-sql-str
+  ([sql-v opts]
+   (->> (map #(utils/pretty-str % opts) sql-v)
+        (string/join)))
+  ([sql-v]
+   (make-sql-str sql-v nil)))
+
+(defn number-header [n]
+  (format "%03d" n))
+
+(def create-header "create")
+(def up-footer ".up.sql")
+(def down-footer ".down.sql")
+
+(defn make-ragtime-filename [postgres-schema table-key]
+  (let [table (name table-key)
+        order (get-in postgres-schema [table-key :table-order])
+        base-name (string/join "-" [(number-header order) create-header table])]
+    {:up-name (str base-name up-footer)
+     :down-name (str base-name down-footer)}))
+
+(defn get-table-orders [types]
+  (let [orders (sp/select [sp/ALL #(number? (:postgres/table-order %)) (sp/submap [:type/name :postgres/table-order])]
+                          types)]
+    (reduce (fn [res m]
+              (let [{:keys [type/name postgres/table-order]} m]
+                (assoc res (-> name ->kebab-case-string keyword) {:table-order table-order})))
+            {}
+            orders)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Public functions
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defn schema
+(defn raw-schema
   [conn]
-  (let [types (utils/get-eids-types conn :postgres/tag)]
-    (->> types
-         (reduce (fn [c t]
-                   (concat c (postgres-get-type types t)))
-                 [])
-         vec)))
+  (let [types (utils/get-eids-types conn :postgres/tag)
+        tables (get-table-orders types)
+        raw-columns (->> types
+                         (reduce (fn [c t]
+                                   (concat c (postgres-get-type types t)))
+                                 [])
+                         vec)
+        group-columns (group-schema raw-columns)]
+    (reduce (fn [res k]
+              (let [column (get group-columns k)]
+                (update res k assoc :column column)))
+            tables
+            (keys group-columns))))
 
+(defn schema->sql [schema]
+  (let [table-keys (keys schema)
+        middle-schema (reduce (fn [res k]
+                                (let [m (make-sql-table schema k)]
+                                  (update res k merge m)))
+                              schema
+                              table-keys)]
+    (reduce (fn [res k]
+              (let [m (make-ragtime-filename middle-schema k)]
+                (update res k merge m)))
+            middle-schema
+            table-keys)))
+
+(defn schema [conn]
+  (let [raw (raw-schema conn)]
+    (schema->sql raw)))
 
 (comment
   (do
@@ -211,6 +323,6 @@
                    PART_TIME]]))
 
     (clojure.pprint/pprint
-      (schema conn))))
+      (raw-schema conn))))
 
 

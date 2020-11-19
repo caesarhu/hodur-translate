@@ -6,7 +6,9 @@
     [clojure.pprint :refer [pprint]]
     [clojure.string :as string]
     [datascript.core :as d]
-    [datascript.query-v3 :as q])
+    [datascript.query-v3 :as q]
+    #?(:clj  [com.rpl.specter :as sp]
+       :cljs [com.rpl.specter :as s :refer-macros [select select-one transform setval]]))
   (:import
     (java.io
       StringWriter)))
@@ -24,29 +26,38 @@
 
 
 (def default-cljstyle
-  (:rules config/default-config))
+  config/default-config)
+
+(def sql-style
+  (sp/setval [:rules :indentation :list-indent] 0 default-cljstyle))
 
 
 (defn cljstyle-str
-  [s]
-  (cf/reformat-string s default-cljstyle))
+  ([s opts]
+   (cf/reformat-string s (merge default-cljstyle opts)))
+  ([s]
+   (cljstyle-str s nil)))
 
 
 (defn pretty-str
-  [obj]
-  (-> obj
-      pretty-format
-      cljstyle-str))
+  ([obj opts]
+   (-> obj
+       pretty-format
+       (cljstyle-str opts)))
+  ([obj]
+   (pretty-str obj nil)))
 
 
 (defn spit-code
-  [file obj-v]
-  (let [out-v (map pretty-str obj-v)
-        out-line (map #(vector %1 %2) out-v (repeat "\n\n"))
-        out-str (->> out-line
-                     flatten
-                     (apply str))]
-    (spit file out-str)))
+  ([file obj-v opts]
+   (let [out-v (map #(pretty-str % opts) obj-v)
+         out-line (map #(vector %1 %2) out-v (repeat "\n\n"))
+         out-str (->> out-line
+                      flatten
+                      (apply str))]
+     (spit file out-str)))
+  ([file obj-v]
+   (spit-code file obj-v nil)))
 
 
 (defn ^:private without

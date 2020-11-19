@@ -12,10 +12,12 @@
       :translate/tag true}
     default
 
-    ^{:translate/chinese "危安物品檔"}
+    ^{:translate/chinese "危安物品檔"
+      :postgres/table-order 1}
     items
     [^{:type Integer
        :postgres/primary-key true
+       :postgres/auto-increment true
        :spec/override clojure.core/pos-int?
        :translate/chinese "危安物品id"} id
      ^{:type String
@@ -53,10 +55,12 @@
        :optional true
        :translate/chinese "備註"} memo]
 
-    ^{:translate/chinese "紀錄清單檔"}
+    ^{:translate/chinese "紀錄清單檔"
+      :postgres/table-order 2}
     all-list
     [^{:type Integer
        :postgres/primary-key true
+       :postgres/auto-increment true
        :spec/override clojure.core/pos-int?
        :translate/chinese "紀錄清單檔id"} id
      ^{:type items
@@ -72,10 +76,12 @@
      ^{:type Integer
        :translate/chinese "數量"} quantity]
 
-    ^{:translate/chinese "項目清單檔"}
+    ^{:translate/chinese "項目清單檔"
+      :postgres/table-order 3}
     item-list
     [^{:type Integer
        :postgres/primary-key true
+       :postgres/auto-increment true
        :spec/override clojure.core/pos-int?
        :translate/chinese "項目清單檔id"} id
      ^{:type items
@@ -92,9 +98,11 @@
      ^{:type String
        :translate/chinese "物品"} object]
 
-    ^{:translate/chinese "項目人數檔"}
+    ^{:translate/chinese "項目人數檔"
+      :postgres/table-order 4}
     item-people
     [^{:type Integer
+       :postgres/auto-increment true
        :postgres/primary-key true
        :spec/override clojure.core/pos-int?
        :translate/chinese "項目人數檔id"} id
@@ -112,10 +120,12 @@
      ^{:type Integer
        :translate/chinese "人數"} people]
 
-    ^{:translate/chinese "單位檔"}
+    ^{:translate/chinese "單位檔"
+      :postgres/table-order 5}
     units
     [^{:type Integer
        :postgres/primary-key true
+       :postgres/auto-increment true
        :spec/override clojure.core/pos-int?
        :translate/chinese "單位檔id"} id
      ^{:type String
@@ -123,9 +133,15 @@
      ^{:type String
        :translate/chinese "子單位"} subunit]
 
-    ^{:translate/chinese "檔案最後時間檔"}
+    ^{:translate/chinese "檔案最後時間檔"
+      :postgres/table-order 6}
     last-time
-    [^{:type DateTime
+    [^{:type Integer
+       :postgres/auto-increment true
+       :postgres/primary-key true
+       :spec/override clojure.core/pos-int?
+       :translate/chinese "檔案最後時間檔id"} id
+     ^{:type DateTime
        :postgres/primary-key true
        :translate/chinese "最後時間"} file-time
      ^{:type Integer
@@ -135,9 +151,11 @@
      ^{:type Integer
        :translate/chinese "處理失敗紀錄"} fail]
 
-    ^{:translate/chinese "郵件列表檔"}
+    ^{:translate/chinese "郵件列表檔"
+      :postgres/table-order 7}
     mail-list
     [^{:type Integer
+       :postgres/auto-increment true
        :postgres/primary-key true
        :spec/override clojure.core/pos-int?
        :translate/chinese "郵件列表id"} id
