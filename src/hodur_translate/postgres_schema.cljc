@@ -6,7 +6,8 @@
     [clojure.string :as string]
     #?(:clj  [com.rpl.specter :as sp]
        :cljs [com.rpl.specter :as s :refer-macros [select select-one transform setval]])
-    [hodur-translate.utils :as utils]))
+    [hodur-translate.utils :as utils]
+    [datoteka.core :as fs]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Parsing functions
@@ -272,6 +273,20 @@
 (defn schema [conn]
   (let [raw (raw-schema conn)]
     (schema->sql raw)))
+
+(defn save-schema-sql
+  [schema path]
+  (when (string? path)
+    (let [new-path (string/replace (str path "/") #"//" "/")]
+      (fs/create-dir new-path)
+      (dorun (for [table-key (keys schema)
+                   :let [{:keys [up-name down-name create-table drop-table]} (get schema table-key)
+                         up-file (str new-path up-name)
+                         down-file (str new-path down-name)]]
+               (do
+                 (spit up-file (make-sql-str create-table))
+                 (spit down-file (make-sql-str drop-table))))))))
+
 
 (comment
   (do
