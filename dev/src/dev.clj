@@ -20,7 +20,9 @@
     [integrant.repl :refer [clear halt go init prep reset]]
     [integrant.repl.state :refer [config system]]
     [java-time :as jt]
-    [spec-tools.core :as st]))
+    [spec-tools.core :as st]
+    [hodur-translate.meta-db :refer [meta-db]]
+    [hodur-translate.postgres-schema :as ps]))
 
 
 (duct/load-hierarchy)

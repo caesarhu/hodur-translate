@@ -1,9 +1,7 @@
 ;;; Hodur Engine origin schema
 (ns hodur-translate.meta-db
   (:require
-    [hodur-translate.engine :as engine]
-    [hodur-translate.utils :as utils]))
-
+    [hodur-translate.engine :as engine]))
 
 (def meta-schema
   '[^{:lacinia/tag true

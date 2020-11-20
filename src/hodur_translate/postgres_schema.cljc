@@ -126,48 +126,6 @@
                  []))))
 
 
-(defn make-opt-fn
-  [conf-fn true-fn false-fn extra]
-  (fn [s v]
-    (if (conf-fn v)
-      (true-fn s v extra)
-      (false-fn s v extra))))
-
-
-(defn true-defualt
-  [s v extra]
-  (str s extra))
-
-
-(defn false-default
-  [s v extra]
-  s)
-
-
-(defn cond-default
-  [v]
-  v)
-
-
-(defn true-ref-type
-  [s v extra]
-  (str s extra (-> v name ->SCREAMING_SNAKE_CASE_STRING)))
-
-
-(def postgres-sql-column-options
-  {:postgres.constraint/optional    (make-opt-fn cond-default false-default true-defualt " NOT NULL")
-   :postgres/auto-increment         (make-opt-fn cond-default true-defualt false-default " GENERATED ALWAYS AS IDENTITY")
-   :postgres.constraint/unique      (make-opt-fn cond-default true-defualt false-default " UNIQUE")
-   :postgres.constraint/primary-key (make-opt-fn cond-default true-defualt false-default " PRIMARY KEY")
-   :postgres/ref                    (make-opt-fn #(keyword? %)
-                                                 (fn [s v extra]
-                                                   (str s extra (namespace v) " (" (name v) ")"))
-                                                 false-default
-                                                 " REFERENCES ")
-   :postgres/ref-update             (make-opt-fn #(keyword? %) true-ref-type false-default " ON UPDATE ")
-   :postgres/ref-delete             (make-opt-fn #(keyword? %) true-ref-type false-default " ON DELETE ")})
-
-
 (defn get-sql-table-snake
   [schema]
   (-> schema :db/ident namespace ->snake_case_string))
@@ -182,21 +140,21 @@
   [schema]
   (-> schema :db/valueType name ->SCREAMING_SNAKE_CASE_STRING))
 
-
-(def sql-column-options
-  [:postgres.constraint/optional :postgres/auto-increment :postgres.constraint/unique
-   :postgres.constraint/primary-key :postgres/ref :postgres/ref-update :postgres/ref-delete])
-
-
-(defn make-sql-column
+(defn create-sql-column
   [schema]
-  (let [column-origin (str (get-sql-column schema) " " (get-sql-column-type schema))]
-    (reduce (fn [res k]
-              (let [f (get postgres-sql-column-options k)
-                    val (get schema k)]
-                (f res val)))
-            column-origin
-            sql-column-options)))
+  (cond-> (str (get-sql-column schema) " " (get-sql-column-type schema))
+    (not (:postgres.constraint/optional schema)) (str " NOT NULL")
+    (:postgres/auto-increment schema) (str " GENERATED ALWAYS AS IDENTITY")
+    (:postgres.constraint/unique schema) (str " UNIQUE")
+    (:postgres.constraint/primary-key schema) (str " PRIMARY KEY")
+    (keyword? (:postgres/ref schema)) (str " REFERENCES " (namespace (:postgres/ref schema))
+                                           " (" (name (:postgres/ref schema)) ")")
+    (keyword? (:postgres/ref-update schema)) (str " ON UPDATE " (-> (:postgres/ref-update schema)
+                                                                    name
+                                                                    ->SCREAMING_SNAKE_CASE_STRING))
+    (keyword? (:postgres/ref-delete schema)) (str " ON UPDATE " (-> (:postgres/ref-delete schema)
+                                                                    name
+                                                                    ->SCREAMING_SNAKE_CASE_STRING))))
 
 
 (defn make-column-index
@@ -215,7 +173,7 @@
         columns (get-in postgres-schema [table-key :column])
         create-header (str "CREATE TABLE " table)
         drop-header (str "DROP TABLE " table " ;")
-        column-def (let [str-v (map make-sql-column columns)
+        column-def (let [str-v (map create-sql-column columns)
                          header (-> (map #(str % " ,") (drop-last str-v))
                                     vec)]
                      (apply list (conj header (last str-v))))
