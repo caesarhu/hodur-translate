@@ -1,23 +1,23 @@
 (ns hodur-translate.postgres-schema
   (:require
     [camel-snake-kebab.core :refer [->kebab-case-string ->snake_case_string ->SCREAMING_SNAKE_CASE_STRING]]
-    [datascript.core :as d]
-    [datascript.query-v3 :as q]
     [clojure.string :as string]
     #?(:clj  [com.rpl.specter :as sp]
        :cljs [com.rpl.specter :as s :refer-macros [select select-one transform setval]])
-    [hodur-translate.utils :as utils]
-    [datoteka.core :as fs]))
+    [datascript.core :as d]
+    [datascript.query-v3 :as q]
+    [datoteka.core :as fs]
+    [hodur-translate.utils :as utils]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Parsing functions
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defmulti  primitive-or-ref-type
-          (fn [field]
-            (let [ref-type (-> field :field/type :type/name)
-                  dat-type (-> field :postgres/type)]
-              (or dat-type ref-type))))
+  (fn [field]
+    (let [ref-type (-> field :field/type :type/name)
+          dat-type (-> field :postgres/type)]
+      (or dat-type ref-type))))
 
 
 (defmethod primitive-or-ref-type "String" [_] :postgres.type/text)
@@ -35,25 +35,32 @@
 (defmethod primitive-or-ref-type :default [_] :postgres.type/ref)
 
 
-(defn  get-value-type
+(defn get-value-type
   [field]
   (if-let [dat-type (-> field :postgres/type)]
     dat-type
     (primitive-or-ref-type field)))
 
-(defn get-identity [type]
+
+(defn get-identity
+  [type]
   (let [fields (get type :field/_parent)
         primary-field (sp/select-one [sp/ALL #(:postgres/primary-key %)] fields)]
     (when primary-field
       {:postgres/ref (keyword (name (:type/name type)) (:field/name primary-field))
        :db/valueType (get-value-type primary-field)})))
 
-(defn get-type-identity [types type-name]
-  (some-> (sp/select-one [sp/ALL #(= type-name (:type/name %))] types)
+
+(def ^:private schema-types (atom nil))
+
+
+(defn get-type-identity
+  [type-name]
+  (some-> (sp/select-one [sp/ALL #(= type-name (:type/name %))] @schema-types)
           get-identity))
 
 
-(defn  get-cardinality
+(defn get-cardinality
   [{:keys [field/cardinality]}]
   (if cardinality
     (if (and (= (first cardinality) 1)
@@ -63,14 +70,14 @@
     :db.cardinality/one))
 
 
-(defn  assoc-documentation
+(defn assoc-documentation
   [m {:keys [field/doc field/deprecation]}]
   (if (or doc deprecation)
     (assoc m :db/doc
-             (cond-> ""
-                       doc                   (str doc)
-                       (and doc deprecation) (str "\n\n")
-                       deprecation           (str "DEPRECATION NOTE: " deprecation)))
+           (cond-> ""
+             doc                   (str doc)
+             (and doc deprecation) (str "\n\n")
+             deprecation           (str "DEPRECATION NOTE: " deprecation)))
     m))
 
 
@@ -84,7 +91,8 @@
    :postgres/ref-delete :postgres/ref-delete
    :field/optional  :postgres.constraint/optional})
 
-(defn  assoc-attributes
+
+(defn assoc-attributes
   [m field]
   (reduce-kv (fn [a k v]
                (if-let [entry (get postgres-translate-table k)]
@@ -94,86 +102,94 @@
 
 
 (defn postgres-process-field
-  [types entity-id is-enum? {:keys [field/name] :as field}]
+  [entity-id is-enum? {:keys [field/name] :as field}]
   (let [ref-type (-> field :field/type :type/name)]
     (cond-> {:db/ident (keyword entity-id
                                 (->kebab-case-string name))}
       (not is-enum?) (assoc :db/valueType (get-value-type field)
                             :db/cardinality (get-cardinality field))
       (not is-enum?) (assoc-attributes field)
-      (= :postgres.type/ref (get-value-type field)) (merge (get-type-identity types ref-type))
+      (= :postgres.type/ref (get-value-type field)) (merge (get-type-identity ref-type))
 
       :always        (assoc-documentation field))))
 
 
 (defn postgres-get-type
-  [types {:keys [type/name type/enum field/_parent]}]
+  [{:keys [type/name type/enum field/_parent]}]
   (let [entity-id (->kebab-case-string name)]
     (->> _parent
          (sort-by :field/name)
          (reduce (fn [c {:keys [postgres/tag] :as field}]
                    (if tag
-                     (conj c (postgres-process-field types entity-id enum field))
+                     (conj c (postgres-process-field entity-id enum field))
                      c))
                  []))))
 
+
+(defn make-opt-fn
+  [conf-fn true-fn false-fn extra]
+  (fn [s v]
+    (if (conf-fn v)
+      (true-fn s v extra)
+      (false-fn s v extra))))
+
+
+(defn true-defualt
+  [s v extra]
+  (str s extra))
+
+
+(defn false-default
+  [s v extra]
+  s)
+
+
+(defn cond-default
+  [v]
+  v)
+
+
+(defn true-ref-type
+  [s v extra]
+  (str s extra (-> v name ->SCREAMING_SNAKE_CASE_STRING)))
+
+
 (def postgres-sql-column-options
-  {:postgres.constraint/optional    (fn [s v]
-                                      (if-not v
-                                        (str s " NOT NULL")
-                                        s))
-   :postgres/auto-increment         (fn [s v]
-                                      (if v
-                                        (str s " GENERATED ALWAYS AS IDENTITY")
-                                        s))
-   :postgres.constraint/unique      (fn [s v]
-                                      (if v
-                                        (str s " UNIQUE")
-                                        s))
-   :postgres.constraint/primary-key (fn [s v]
-                                      (if v
-                                        (str s " PRIMARY KEY")
-                                        s))
-   :postgres/ref                    (fn [s v]
-                                      (if (keyword? v)
-                                        (str s " REFERENCES " (namespace v) " (" (name v) ")")
-                                        s))
-   :postgres/ref-update             (fn [s v]
-                                      (if (keyword? v)
-                                        (str s " ON UPDATE " (-> v name ->SCREAMING_SNAKE_CASE_STRING))
-                                        s))
-   :postgres/ref-delete             (fn [s v]
-                                      (if (keyword? v)
-                                        (str s " ON DELETE " (-> v name ->SCREAMING_SNAKE_CASE_STRING))
-                                        s))})
+  {:postgres.constraint/optional    (make-opt-fn cond-default false-default true-defualt " NOT NULL")
+   :postgres/auto-increment         (make-opt-fn cond-default true-defualt false-default " GENERATED ALWAYS AS IDENTITY")
+   :postgres.constraint/unique      (make-opt-fn cond-default true-defualt false-default " UNIQUE")
+   :postgres.constraint/primary-key (make-opt-fn cond-default true-defualt false-default " PRIMARY KEY")
+   :postgres/ref                    (make-opt-fn #(keyword? %)
+                                                 (fn [s v extra]
+                                                   (str s extra (namespace v) " (" (name v) ")"))
+                                                 false-default
+                                                 " REFERENCES ")
+   :postgres/ref-update             (make-opt-fn #(keyword? %) true-ref-type false-default " ON UPDATE ")
+   :postgres/ref-delete             (make-opt-fn #(keyword? %) true-ref-type false-default " ON DELETE ")})
 
-(defn get-sql-table [schema]
-  (-> schema :db/ident namespace keyword))
 
-(defn get-sql-table-snake [schema]
+(defn get-sql-table-snake
+  [schema]
   (-> schema :db/ident namespace ->snake_case_string))
 
-(defn get-sql-column [schema]
+
+(defn get-sql-column
+  [schema]
   (-> schema :db/ident name ->snake_case_string))
 
-(defn get-sql-column-type [schema]
+
+(defn get-sql-column-type
+  [schema]
   (-> schema :db/valueType name ->SCREAMING_SNAKE_CASE_STRING))
 
-(defn group-schema [schema]
-  (let [table-keys (->> (map get-sql-table schema)
-                        set)
-        table-map (zipmap table-keys (repeat []))]
-    (reduce (fn [res m]
-              (let [table (get-sql-table m)]
-                (update res table conj m)))
-            table-map
-            schema)))
 
 (def sql-column-options
   [:postgres.constraint/optional :postgres/auto-increment :postgres.constraint/unique
    :postgres.constraint/primary-key :postgres/ref :postgres/ref-update :postgres/ref-delete])
 
-(defn make-sql-column [schema]
+
+(defn make-sql-column
+  [schema]
   (let [column-origin (str (get-sql-column schema) " " (get-sql-column-type schema))]
     (reduce (fn [res k]
               (let [f (get postgres-sql-column-options k)
@@ -182,7 +198,9 @@
             column-origin
             sql-column-options)))
 
-(defn make-column-index [schema]
+
+(defn make-column-index
+  [schema]
   (when (:postgres/index schema)
     (let [table (get-sql-table-snake schema)
           column (get-sql-column schema)]
@@ -190,7 +208,9 @@
        (->> (str "CREATE INDEX " table "_" column "_index ON " table " (" column ") ;")
             symbol)])))
 
-(defn make-sql-table [postgres-schema table-key]
+
+(defn make-sql-table
+  [postgres-schema table-key]
   (let [table (-> table-key name ->snake_case_string)
         columns (get-in postgres-schema [table-key :column])
         create-header (str "CREATE TABLE " table)
@@ -207,6 +227,7 @@
                                  (concat [create-header column-def ";"] index-def))
      :drop-table [(symbol drop-header)]}))
 
+
 (defn make-sql-str
   ([sql-v opts]
    (->> (map #(utils/pretty-str % opts) sql-v)
@@ -214,65 +235,75 @@
   ([sql-v]
    (make-sql-str sql-v nil)))
 
-(defn number-header [n]
+
+(defn number-header
+  [n]
   (format "%03d" n))
+
 
 (def create-header "create")
 (def up-footer ".up.sql")
 (def down-footer ".down.sql")
 
-(defn make-ragtime-filename [postgres-schema table-key]
+
+(defn make-ragtime-filename
+  [postgres-schema table-key]
   (let [table (name table-key)
-        order (get-in postgres-schema [table-key :table-order])
+        order (get-in postgres-schema [table-key :postgres/table-order])
         base-name (string/join "-" [(number-header order) create-header table])]
     {:up-name (str base-name up-footer)
      :down-name (str base-name down-footer)}))
 
-(defn get-table-orders [types]
-  (let [orders (sp/select [sp/ALL #(number? (:postgres/table-order %)) (sp/submap [:type/name :postgres/table-order])]
-                          types)]
-    (reduce (fn [res m]
-              (let [{:keys [type/name postgres/table-order]} m]
-                (assoc res (-> name ->kebab-case-string keyword) {:table-order table-order})))
-            {}
-            orders)))
+
+(defn postgres-or-name?
+  [entry]
+  (let [ek (key entry)]
+    (or (= ek :type/name)
+        (= "postgres" (namespace ek)))))
+
+
+(defn type->table
+  [type]
+  (let [table (->> (filter postgres-or-name? type)
+                   (into {}))
+        table-key (-> table :type/name ->kebab-case-string keyword)]
+    {table-key (assoc table :column (postgres-get-type type))}))
+
+
+(defn types->tables
+  [types]
+  (->> (map type->table types)
+       (apply merge)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Public functions
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defn raw-schema
+(defn db-schema
   [conn]
   (let [types (utils/get-eids-types conn :postgres/tag)
-        tables (get-table-orders types)
-        raw-columns (->> types
-                         (reduce (fn [c t]
-                                   (concat c (postgres-get-type types t)))
-                                 [])
-                         vec)
-        group-columns (group-schema raw-columns)]
-    (reduce (fn [res k]
-              (let [column (get group-columns k)]
-                (update res k assoc :column column)))
-            tables
-            (keys group-columns))))
+        _ (reset! schema-types types)
+        result (types->tables types)]
+    (reset! schema-types nil)
+    result))
 
-(defn schema->sql [schema]
-  (let [table-keys (keys schema)
-        middle-schema (reduce (fn [res k]
-                                (let [m (make-sql-table schema k)]
-                                  (update res k merge m)))
-                              schema
-                              table-keys)]
+
+(defn schema->sql
+  [schema]
+  (let [table-keys (keys schema)]
     (reduce (fn [res k]
-              (let [m (make-ragtime-filename middle-schema k)]
-                (update res k merge m)))
-            middle-schema
+              (let [m (make-sql-table schema k)
+                    fm (merge m (make-ragtime-filename schema k))]
+                (update res k merge fm)))
+            schema
             table-keys)))
 
-(defn schema [conn]
-  (let [raw (raw-schema conn)]
+
+(defn schema
+  [conn]
+  (let [raw (db-schema conn)]
     (schema->sql raw)))
+
 
 (defn save-schema-sql
   [schema path]
@@ -288,56 +319,8 @@
                  (spit down-file (make-sql-str drop-table))))))))
 
 
-(comment
-  (do
-    (require '[hodur-engine.core :as engine])
-
-    (def conn (engine/init-schema
-                '[^{:postgres/tag true}
-                  default
-
-                  ^:interface
-                  Person
-                  [^String name]
-
-                  Employee
-                  [^String name
-                   ^{:type String
-                     :doc "The very employee number of this employee"
-                     :postgres/unique :db.unique/identity}
-                   number
-                   ^Float salary
-                   ^Integer age
-                   ^DateTime start-date
-                   ^Employee supervisor
-                   ^{:type Employee
-                     :cardinality [0 n]
-                     :doc "Has documentation"
-                     :deprecation "But also deprecation"}
-                   co-workers
-                   ^{:postgres/type :postgres.type/keyword}
-                   keyword-type
-                   ^{:postgres/type :postgres.type/uri}
-                   uri-type
-                   ^{:postgres/type :postgres.type/double}
-                   double-type
-                   ^{:postgres/type :postgres.type/bigdec
-                     :deprecation "This is deprecated"}
-                   bigdec-type
-                   ^EmploymentType employment-type
-                   ^SearchResult last-search-results]
-
-                  ^{:union true}
-                  SearchResult
-                  [Employee Person EmploymentType]
-
-                  ^{:enum true}
-                  EmploymentType
-                  [FULL_TIME
-                   ^{:doc "Documented enum"}
-                   PART_TIME]]))
-
-    (clojure.pprint/pprint
-      (raw-schema conn))))
+(defn save-db-sql
+  [conn path]
+  (save-schema-sql (schema conn) path))
 
 

@@ -2,13 +2,13 @@
   (:require
     [cljstyle.config :as config]
     [cljstyle.format.core :as cf]
-    [clojure.set :refer [difference union intersection]]
     [clojure.pprint :refer [pprint]]
+    [clojure.set :refer [difference union intersection]]
     [clojure.string :as string]
-    [datascript.core :as d]
-    [datascript.query-v3 :as q]
     #?(:clj  [com.rpl.specter :as sp]
-       :cljs [com.rpl.specter :as s :refer-macros [select select-one transform setval]]))
+       :cljs [com.rpl.specter :as s :refer-macros [select select-one transform setval]])
+    [datascript.core :as d]
+    [datascript.query-v3 :as q])
   (:import
     (java.io
       StringWriter)))
@@ -27,6 +27,7 @@
 
 (def default-cljstyle
   config/default-config)
+
 
 (def sql-style
   (sp/setval [:rules :indentation :list-indent] 0 default-cljstyle))

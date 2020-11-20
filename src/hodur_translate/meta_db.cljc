@@ -142,7 +142,7 @@
        :spec/override clojure.core/pos-int?
        :translate/chinese "檔案最後時間檔id"} id
      ^{:type DateTime
-       :postgres/primary-key true
+       :postgres/index true
        :translate/chinese "最後時間"} file-time
      ^{:type Integer
        :translate/chinese "全部處理紀錄"} total
@@ -162,6 +162,7 @@
      ^{:type String
        :translate/chinese "單位"} unit
      ^{:type String
+       :optional true
        :translate/chinese "子單位"} subunit
      ^{:type String
        :optional true
@@ -169,6 +170,8 @@
      ^{:type String
        :optional true
        :translate/chinese "姓名"} name
+     ^{:type String
+       :translate/chinese "電子郵件"} email
      ^{:type String
        :optional true
        :translate/chinese "備註"} memo]])
