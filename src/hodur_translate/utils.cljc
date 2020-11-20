@@ -56,7 +56,7 @@
          out-str (->> out-line
                       flatten
                       (apply str))]
-     (spit file out-str)))
+     (spit file (pretty-str out-str opts))))
   ([file obj-v]
    (spit-code file obj-v nil)))
 
