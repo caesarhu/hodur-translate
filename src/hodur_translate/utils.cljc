@@ -2,6 +2,7 @@
   (:require
     [cljstyle.config :as config]
     [cljstyle.format.core :as cf]
+    [clojure.java.io :as io]
     [clojure.pprint :refer [pprint]]
     [clojure.set :refer [difference union intersection]]
     [clojure.string :as string]
@@ -16,6 +17,14 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Topological Sorting
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defn read-schema
+  [path]
+  (->> path
+       io/resource
+       slurp
+       read-string))
+
 
 (defn pretty-format
   [obj]

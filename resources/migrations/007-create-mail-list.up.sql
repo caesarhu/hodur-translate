@@ -1,9 +1,0 @@
-CREATE TABLE mail_list
-(email TEXT NOT NULL ,
- id BIGINT NOT NULL GENERATED ALWAYS AS IDENTITY PRIMARY KEY ,
- memo TEXT ,
- name TEXT ,
- position TEXT ,
- subunit TEXT ,
- unit TEXT NOT NULL)
-;

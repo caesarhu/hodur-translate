@@ -1,7 +1,5 @@
-;;; Hodur Engine origin schema
-(ns hodur-translate.meta-db
-  (:require
-    [hodur-translate.engine :as engine]))
+(ns hodur-translate.meta-db)
+
 
 (def meta-schema
   '[^{:lacinia/tag true
@@ -10,170 +8,114 @@
       :translate/tag true}
     default
 
-    ^{:translate/chinese "危安物品檔"
+    ^{:translate/chinese "性別類別"
+      :enum true
       :postgres/table-order 1}
-    items
-    [^{:type Integer
-       :postgres/primary-key true
-       :postgres/auto-increment true
-       :spec/override clojure.core/pos-int?
-       :translate/chinese "危安物品id"} id
-     ^{:type String
-       :translate/chinese "原始檔案"} file
-     ^{:type DateTime
-       :translate/chinese "原始檔案時間"} file-time
-     ^{:type String
-       :translate/chinese "攜帶方式"} carry
-     ^{:type DateTime
-       :translate/chinese "查獲時間"} check-time
-     ^{:type String
-       :optional true
-       :translate/chinese "飛機班次"} flight
-     ^{:type String
-       :translate/chinese "單位"} unit
-     ^{:type String
-       :optional true
-       :translate/chinese "子單位"} subunit
-     ^{:type String
-       :translate/chinese "查獲員警"} police
-     ^{:type String
-       :translate/chinese "處理方式"} process
-     ^{:type String
-       :translate/chinese "查獲人簽名"} check-sign
-     ^{:type String
-       :optional true
-       :translate/chinese "旅客簽名"} passenger-sign
-     ^{:type String
-       :optional true
-       :translate/chinese "貨運業者簽名"} trader-sign
-     ^{:type String
-       :optional true
-       :translate/chinese "輸入設備IP"} ip
-     ^{:type String
-       :optional true
-       :translate/chinese "備註"} memo]
+    gender-type
+    [男 女]
 
-    ^{:translate/chinese "紀錄清單檔"
+    ^{:translate/chinese "間直接類別"
+      :enum true
       :postgres/table-order 2}
-    all-list
-    [^{:type Integer
-       :postgres/primary-key true
-       :postgres/auto-increment true
-       :spec/override clojure.core/pos-int?
-       :translate/chinese "紀錄清單檔id"} id
-     ^{:type items
-       :postgres/index true
-       :cardinality [0 1]
-       :spec/override clojure.core/pos-int?
-       :postgres/ref-update :cascade
-       :postgres/ref-delete :cascade
-       :translate/chinese "items-id參考"} items-id
-     ^{:type String
-       :postgres/index true
-       :translate/chinese "項目"} item
-     ^{:type Integer
-       :translate/chinese "數量"} quantity]
+    direct-type
+    [直接 間接]
 
-    ^{:translate/chinese "項目清單檔"
+    ^{:translate/chinese "薪資計算類別"
+      :enum true
       :postgres/table-order 3}
-    item-list
-    [^{:type Integer
-       :postgres/primary-key true
-       :postgres/auto-increment true
-       :spec/override clojure.core/pos-int?
-       :translate/chinese "項目清單檔id"} id
-     ^{:type items
-       :postgres/index true
-       :cardinality [0 1]
-       :spec/override clojure.core/pos-int?
-       :postgres/ref-update :cascade
-       :postgres/ref-delete :cascade
-       :translate/chinese "items-id參考"} items-id
-     ^{:type String
-       :translate/chinese "種類"} kind
-     ^{:type String
-       :translate/chinese "類別"} subkind
-     ^{:type String
-       :translate/chinese "物品"} object]
+    salary-type
+    [月薪 計時 計件]
 
-    ^{:translate/chinese "項目人數檔"
+    ^{:translate/chinese "員工類別"
+      :enum true
       :postgres/table-order 4}
-    item-people
-    [^{:type Integer
-       :postgres/auto-increment true
-       :postgres/primary-key true
-       :spec/override clojure.core/pos-int?
-       :translate/chinese "項目人數檔id"} id
-     ^{:type items
-       :postgres/index true
-       :cardinality [0 1]
-       :spec/override clojure.core/pos-int?
-       :postgres/ref-update :cascade
-       :postgres/ref-delete :cascade
-       :translate/chinese "items-id參考"} items-id
-     ^{:type String
-       :translate/chinese "種類"} kind
-     ^{:type Integer
-       :translate/chinese "件數"} piece
-     ^{:type Integer
-       :translate/chinese "人數"} people]
+    employee-type
+    [回聘 契約正式 契約工讀 計時 計件]
 
-    ^{:translate/chinese "單位檔"
+    ^{:translate/chinese "費用類別"
+      :enum true
       :postgres/table-order 5}
-    units
-    [^{:type Integer
-       :postgres/primary-key true
-       :postgres/auto-increment true
-       :spec/override clojure.core/pos-int?
-       :translate/chinese "單位檔id"} id
-     ^{:type String
-       :translate/chinese "單位"} unit
-     ^{:type String
-       :translate/chinese "子單位"} subunit]
+    price-type
+    [直接費用 間接費用 研發費用 推銷費用 管理費用 製造費用]
 
-    ^{:translate/chinese "檔案最後時間檔"
+    ^{:translate/chinese "員工異動類別"
+      :enum true
       :postgres/table-order 6}
-    last-time
-    [^{:type Integer
-       :postgres/auto-increment true
-       :postgres/primary-key true
-       :spec/override clojure.core/pos-int?
-       :translate/chinese "檔案最後時間檔id"} id
-     ^{:type DateTime
-       :postgres/index true
-       :translate/chinese "最後時間"} file-time
-     ^{:type Integer
-       :translate/chinese "全部處理紀錄"} total
-     ^{:type Integer
-       :translate/chinese "處理成功紀錄"} success
-     ^{:type Integer
-       :translate/chinese "處理失敗紀錄"} fail]
+    employee-change-type
+    [到職 離職 復職 停職]
 
-    ^{:translate/chinese "郵件列表檔"
+    ^{:translate/chinese "月薪期別"
+      :enum true
       :postgres/table-order 7}
-    mail-list
+    month-type
+    [上期 下期]
+
+    ^{:translate/chinese "員工質本資料表"
+      :postgres/table-order 100}
+    employee
     [^{:type Integer
        :postgres/auto-increment true
        :postgres/primary-key true
        :spec/override clojure.core/pos-int?
-       :translate/chinese "郵件列表id"} id
+       :translate/chinese "員工質本資料表id"} id
      ^{:type String
-       :translate/chinese "單位"} unit
+       :postgres/index true
+       :postgres/unique true
+       :translate/chinese "身分證號"} taiwan-id
      ^{:type String
-       :optional true
-       :translate/chinese "子單位"} subunit
+       :postgres/index true
+       :postgres/unique true
+       :translate/chinese "員工編號"} company-id
      ^{:type String
-       :optional true
-       :translate/chinese "職稱"} position
-     ^{:type String
-       :optional true
+       :postgres/index true
        :translate/chinese "姓名"} name
+     ^{:type Date
+       :translate/chinese "生日"} birthday
+     ^{:type gender-type
+       :translate/chinese "性別"} gender
+     ^{:type direct-type
+       :translate/chinese "間直接"} direct-kind
+     ^{:type salary-type
+       :translate/chinese "薪資類別"} salary-kind
+     ^{:type employee-type
+       :translate/chinese "員工類別"} employee-kind
+     ^{:type price-type
+       :translate/chinese "費用類別"} price-kind
      ^{:type String
-       :translate/chinese "電子郵件"} email
+       :translate/chinese "戶籍地址"} reg-addr
      ^{:type String
        :optional true
-       :translate/chinese "備註"} memo]])
+       :translate/chinese "通訊地址"} mail-addr
+     ^{:type String
+       :translate/chinese "單位代號"} unit-id
+     ^{:type String
+       :translate/chinese "銀行代號"} bank-id
+     ^{:type String
+       :translate/chinese "銀行帳號"} account]
 
-
-(def meta-db
-  (engine/init-db meta-schema))
+    ^{:translate/chinese "銀行一覽表"
+      :postgres/table-order 200}
+    bank
+    [^{:type Integer
+       :postgres/auto-increment true
+       :postgres/primary-key true
+       :spec/override clojure.core/pos-int?
+       :translate/chinese "銀行對照檔id"} id
+     ^{:type String
+       :postgres/index true
+       :translate/chinese "總行代號"} head-bank-no
+     ^{:type String
+       :postgres/index true
+       :translate/chinese "銀行代號"} bank-no
+     ^{:type String
+       :translate/chinese "機構名稱"} name
+     ^{:type String
+       :translate/chinese "地址"} addr
+     ^{:type String
+       :translate/chinese "電話"} phone
+     ^{:type String
+       :optional true
+       :translate/chinese "負責人"} principal
+     ^{:type Date
+       :optional true
+       :translate/chinese "異動日期"} change-date]])

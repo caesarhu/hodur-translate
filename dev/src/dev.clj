@@ -15,14 +15,17 @@
     [eftest.runner :as eftest]
     [fipp.edn :refer [pprint]]
     [hodur-translate.core :refer :all]
+    [hodur-translate.data-spec :as ds]
+    [hodur-translate.lacinia-schema :as ls]
+    [hodur-translate.meta-db :refer [meta-schema]]
+    [hodur-translate.postgres-schema :as ps]
+    [hodur-translate.postgres-sql :as sql]
     [hodur-translate.utils :as utils]
     [integrant.core :as ig]
     [integrant.repl :refer [clear halt go init prep reset]]
     [integrant.repl.state :refer [config system]]
     [java-time :as jt]
-    [spec-tools.core :as st]
-    [hodur-translate.meta-db :refer [meta-db]]
-    [hodur-translate.postgres-schema :as ps]))
+    [spec-tools.core :as st]))
 
 
 (duct/load-hierarchy)
@@ -50,6 +53,11 @@
        false)))
   ([spec value]
    (fit-spec spec value st/strip-extra-keys-transformer)))
+
+
+(defn meta-db
+  []
+  (init-schema (utils/read-schema "schema.edn")))
 
 
 (clojure.tools.namespace.repl/set-refresh-dirs "dev/src" "src" "test")
