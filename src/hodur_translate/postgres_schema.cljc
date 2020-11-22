@@ -153,7 +153,7 @@
 
 (defn schema->sql
   [schema-v]
-  (map sql/make-schema-sql schema-v))
+  (map sql/make-schema-sql (sql/set-table-order schema-v)))
 
 
 (defn schema

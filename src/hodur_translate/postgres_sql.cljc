@@ -47,22 +47,27 @@
   [s]
   (str "'" s "'"))
 
+(defn SNAKE_CASE_NAME
+  [k]
+  (-> k name ->SCREAMING_SNAKE_CASE_STRING))
+
 
 (defn create-column-sql
   [schema]
   (cond-> (str (get-sql-column schema) " " (get-sql-column-type schema))
     (not (:postgres.constraint/optional schema)) (str " NOT NULL")
-    (:postgres/auto-increment schema) (str " GENERATED ALWAYS AS IDENTITY")
+    ;(:postgres/auto-increment schema) (str " GENERATED ALWAYS AS IDENTITY")
+    (:postgres/auto-increment schema) (str " GENERATED " (-> (:postgres/auto-increment schema)
+                                                             name
+                                                             string/upper-case) " AS IDENTITY")
     (:postgres.constraint/unique schema) (str " UNIQUE")
     (:postgres.constraint/primary-key schema) (str " PRIMARY KEY")
     (:postgres/ref schema) (str " REFERENCES " (namespace (:postgres/ref schema))
                                 (parentheses (name (:postgres/ref schema))))
     (:postgres/ref-update schema) (str " ON UPDATE " (-> (:postgres/ref-update schema)
-                                                         name
-                                                         ->SCREAMING_SNAKE_CASE_STRING))
+                                                         SNAKE_CASE_NAME))
     (:postgres/ref-update schema) (str " ON UPDATE " (-> (:postgres/ref-delete schema)
-                                                         name
-                                                         ->SCREAMING_SNAKE_CASE_STRING))))
+                                                         SNAKE_CASE_NAME))))
 
 
 (defn create-column-index-sql
@@ -136,7 +141,6 @@
 (def up-footer ".up.sql")
 (def down-footer ".down.sql")
 
-
 (defn make-ragtime-filename
   [postgres-schema]
   (let [table (get-schema-table-name postgres-schema)
@@ -151,9 +155,26 @@
   (merge (create-up-sql postgres-schema)
          (make-ragtime-filename postgres-schema)))
 
-
 (defn save-sql
   [sql-schema path]
   (let [{:keys [up-name down-name up-sql down-sql]} sql-schema]
     (spit (str path up-name) (make-sql-str up-sql))
     (spit (str path down-name) (make-sql-str down-sql))))
+
+(defn create-order
+  [schema-v]
+  (let [order-exist (->> (map :postgres/table-order schema-v)
+                         (filter some?)
+                         set)
+        order-v (->> (range 1 (inc (count schema-v)))
+                     (filter #(not (contains? order-exist %))))]
+    order-v))
+
+(defn set-table-order
+  [schema-v]
+  (let [new-order (create-order schema-v)
+        schema-map (group-by #(nil? (:postgres/table-order %)) schema-v)
+        unorder-schema (get schema-map true)
+        ordered-schema (get schema-map false)]
+    (-> (map #(assoc %1 :postgres/table-order %2) unorder-schema new-order)
+        (concat ordered-schema))))

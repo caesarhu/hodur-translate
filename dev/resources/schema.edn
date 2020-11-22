@@ -5,44 +5,37 @@
  default
 
  ^{:translate/chinese "性別類別"
-   :enum true
-   :postgres/table-order 1}
+   :enum true}
  gender-type
  [男 女]
 
  ^{:translate/chinese "間直接類別"
-   :enum true
-   :postgres/table-order 2}
+   :enum true}
  direct-type
  [直接 間接]
 
  ^{:translate/chinese "薪資計算類別"
-   :enum true
-   :postgres/table-order 3}
+   :enum true}
  salary-type
  [月薪 計時 計件]
 
  ^{:translate/chinese "員工類別"
-   :enum true
-   :postgres/table-order 4}
+   :enum true}
  employee-type
  [回聘 契約正式 契約工讀 計時 計件]
 
  ^{:translate/chinese "費用類別"
-   :enum true
-   :postgres/table-order 5}
+   :enum true}
  price-type
  [直接費用 間接費用 研發費用 推銷費用 管理費用 製造費用]
 
  ^{:translate/chinese "員工異動類別"
-   :enum true
-   :postgres/table-order 6}
+   :enum true}
  employee-change-type
  [到職 離職 復職 停職]
 
  ^{:translate/chinese "月薪期別"
-   :enum true
-   :postgres/table-order 7}
+   :enum true}
  month-type
  [上期 下期]
 
@@ -50,7 +43,7 @@
    :postgres/table-order 100}
  employee
  [^{:type Integer
-    :postgres/auto-increment true
+    :postgres/auto-increment :always
     :postgres/primary-key true
     :spec/override clojure.core/pos-int?
     :translate/chinese "員工質本資料表id"} id
@@ -87,13 +80,36 @@
   ^{:type String
     :translate/chinese "銀行代號"} bank-id
   ^{:type String
-    :translate/chinese "銀行帳號"} account]
+    :translate/chinese "銀行帳號"} account
+  ^{:type String
+    :translate/chinese "工作地"} work-place
+  ^{:type String
+    :translate/chinese "廠區"} factory
+  ^{:type String
+    :translate/chinese "職稱"} job-title
+  ^{:type String
+    :translate/chinese "職稱2"} job-title2
+  ^{:type String
+    :translate/chinese "住家電話"} phone
+  ^{:type String
+    :translate/chinese "行動電話"} mobile
+  ^{:type String
+    :translate/chinese "學歷"} education
+  ^{:type String
+    :translate/chinese "修業期間"} education-period
+  ^{:type String
+    :translate/chinese "特殊例外處理"} exception
+  ^{:type DateTime
+    :translate/chinese "異動時間"} modify_at
+  ^{:type String
+    :translate/chinese "備註"} memo]
+
 
  ^{:translate/chinese "銀行一覽表"
    :postgres/table-order 200}
  bank
  [^{:type Integer
-    :postgres/auto-increment true
+    :postgres/auto-increment :always
     :postgres/primary-key true
     :spec/override clojure.core/pos-int?
     :translate/chinese "銀行對照檔id"} id
