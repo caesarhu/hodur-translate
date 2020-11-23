@@ -11,8 +11,9 @@
 
 
 (defn get-field-translate-data
-  [id-map]
-  (let [{:keys [type/name translate/chinese field/_parent]} id-map
+  [type]
+  (let [{:keys [type/name translate/chinese field/_parent]} type
+        translate-fields (filter :translate/chinese _parent)
         field-fn (fn [field f-key]
                    (->> (f-key field)
                         ->kebab-case-string
@@ -21,7 +22,7 @@
                                (->> (:translate/chinese %)
                                     ->kebab-case-string
                                     (keyword chinese)))
-                    _parent)]
+                    translate-fields)]
     (reduce merge {(keyword name) (keyword chinese)} fields)))
 
 
