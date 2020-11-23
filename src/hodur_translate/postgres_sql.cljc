@@ -47,9 +47,11 @@
   [s]
   (str "'" s "'"))
 
+
 (defn SNAKE_CASE_NAME
   [k]
   (-> k name ->SCREAMING_SNAKE_CASE_STRING))
+
 
 (defn str-or-key?
   [s]
@@ -146,6 +148,7 @@
 (def up-footer ".up.sql")
 (def down-footer ".down.sql")
 
+
 (defn make-ragtime-filename
   [postgres-schema]
   (let [table (get-schema-table-name postgres-schema)
@@ -160,11 +163,13 @@
   (merge (create-up-sql postgres-schema)
          (make-ragtime-filename postgres-schema)))
 
+
 (defn save-sql
   [sql-schema path]
   (let [{:keys [up-name down-name up-sql down-sql]} sql-schema]
     (spit (str path up-name) (make-sql-str up-sql))
     (spit (str path down-name) (make-sql-str down-sql))))
+
 
 (defn create-order
   [schema-v]
@@ -174,6 +179,7 @@
         order-v (->> (range 1 (inc (count schema-v)))
                      (filter #(not (contains? order-exist %))))]
     order-v))
+
 
 (defn set-table-order
   [schema-v]

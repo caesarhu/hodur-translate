@@ -4,16 +4,74 @@
     [hodur-translate.engine :as engine]
     [hodur-translate.postgres-schema :as ps]
     [hodur-translate.spec-schema :as ss]
-    [hodur-translate.translate :as translate]))
+    [hodur-translate.translate :as translate]
+    [hodur-translate.utils :as utils]))
 
 
-(def init-schema engine/init-db)
-(def init-db engine/init-db)
-(def dict-bimap translate/dict-bimap)
-(def dict-translate translate/translate)
-(def spec-schema ss/schema)
-(def spec->data-spec ds/spec->data-spec)
-(def data-spec-schema ds/schema)
-(def postgres-schema ps/schema)
-(def postgres-save-schema-sql ps/save-schema-sql)
-(def postgres-save-sql ps/save-db-sql)
+(defn read-schema
+  [path]
+  (utils/read-schema path))
+
+
+(defn spit-code
+  ([file obj-v opts]
+   (utils/spit-code file obj-v opts))
+  ([file obj-v]
+   ((utils/spit-code file obj-v))))
+
+
+(defn init-schema
+  [source-schema & others]
+  (engine/init-db source-schema others))
+
+
+(defn init-db
+  [source-schema & others]
+  (engine/init-db source-schema others))
+
+
+(defn dict-bimap
+  [conn]
+  (translate/dict-bimap conn))
+
+
+(defn dict-translate
+  [dic name]
+  (translate/translate dic name))
+
+
+(defn spec-schema
+  ([conn]
+   (ss/schema conn))
+  ([conn opts]
+   (ss/schema conn opts)))
+
+
+(defn spec->data-spec
+  ([m qualify?]
+   (ds/spec->data-spec m qualify?))
+  ([m]
+   (ds/spec->data-spec m)))
+
+
+(defn data-spec-schema
+  ([m qualify?]
+   (ds/schema m qualify?))
+  ([m]
+   (ds/schema m)))
+
+
+(defn postgres-schema
+  [conn]
+  (ps/schema conn))
+
+
+(defn save-schema-sql
+  [schema-v path]
+  (ps/save-schema-sql schema-v path))
+
+
+(defn save-db-sql
+  [conn path]
+  (ps/save-db-sql conn path))
+

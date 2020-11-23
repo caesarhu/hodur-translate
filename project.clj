@@ -1,4 +1,4 @@
-(defproject hodur-translate "0.1.5"
+(defproject hodur-translate "0.1.6"
   :description "hodur plugins, postgres supported"
   :url "https://github.com/caesarhu/hodur-translate.git"
   :license {:name "Apache License, Version 2.0."
