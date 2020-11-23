@@ -4,37 +4,37 @@
    :translate/tag true}
  default
 
- ^{:doc "性別型別"
+ ^{:translate/chinese "性別型別"
    :enum true}
  gender-type
  [男 女]
 
- ^{:doc "間直接型別"
+ ^{:translate/chinese "間直接型別"
    :enum true}
  direct-type
  [直接 間接]
 
- ^{:doc "薪資計算型別"
+ ^{:translate/chinese "薪資計算型別"
    :enum true}
  salary-type
  [月薪 計時 計件]
 
- ^{:doc "員工型別"
+ ^{:translate/chinese "員工型別"
    :enum true}
  employee-type
  [回聘 契約正式 契約工讀 計時 計件]
 
- ^{:doc "費用型別"
+ ^{:translate/chinese "費用型別"
    :enum true}
  price-type
  [直接費用 間接費用 研發費用 推銷費用 管理費用 製造費用]
 
- ^{:doc "員工異動型別"
+ ^{:translate/chinese "員工異動型別"
    :enum true}
  employee-change-type
  [到職 離職 復職 停職]
 
- ^{:doc "月薪型別"
+ ^{:translate/chinese "月薪型別"
    :enum true}
  month-type
  [上期 下期]
@@ -99,7 +99,7 @@
     :translate/chinese "職稱"} job-title
   ^{:type String
     :optional true
-    :translate/chinese "職稱2"} job-title2
+    :translate/chinese "職稱-2"} job-title-2
   ^{:type String
     :optional true
     :translate/chinese "住家電話"} phone

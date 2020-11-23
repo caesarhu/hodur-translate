@@ -13,25 +13,24 @@
 (defn get-field-translate-data
   [type]
   (let [{:keys [type/name translate/chinese field/_parent]} type
-        translate-fields (filter :translate/chinese _parent)
-        field-fn (fn [field f-key]
-                   (->> (f-key field)
-                        ->kebab-case-string
-                        (keyword name)))
-        fields (map #(hash-map (field-fn % :field/name)
+        fields (map #(hash-map (->> (:field/name  %)
+                                    ->kebab-case-string
+                                    (keyword name))
                                (->> (:translate/chinese %)
                                     ->kebab-case-string
                                     (keyword chinese)))
-                    translate-fields)]
-    (reduce merge {(keyword name) (keyword chinese)} fields)))
+                    (filter :translate/chinese _parent))]
+    (if  chinese
+      (reduce merge {(keyword name) (keyword chinese)} fields)
+      (reduce merge {} fields))))
 
 
 (defn ->name-map
   [conn]
   (let [selector '[* {:field/_parent [:field/name :translate/chinese]}]
         eids (utils/user-eids conn :translate/tag)
-        id-maps (d/pull-many @conn selector eids)]
-    (->> (map get-field-translate-data id-maps)
+        types (d/pull-many @conn selector eids)]
+    (->> (map get-field-translate-data types)
          (apply merge))))
 
 
