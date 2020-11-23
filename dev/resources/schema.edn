@@ -78,8 +78,10 @@
   ^{:type String
     :translate/chinese "單位代號"} unit-id
   ^{:type String
+    :optional true
     :translate/chinese "銀行代號"} bank-id
   ^{:type String
+    :optional true
     :translate/chinese "銀行帳號"} account
   ^{:type String
     :translate/chinese "工作地"} work-place
@@ -88,20 +90,27 @@
   ^{:type String
     :translate/chinese "職稱"} job-title
   ^{:type String
+    :optional true
     :translate/chinese "職稱2"} job-title2
   ^{:type String
+    :optional true
     :translate/chinese "住家電話"} phone
   ^{:type String
+    :optional true
     :translate/chinese "行動電話"} mobile
   ^{:type String
+    :optional true
     :translate/chinese "學歷"} education
   ^{:type String
+    :optional true
     :translate/chinese "修業期間"} education-period
   ^{:type String
+    :optional true
     :translate/chinese "特殊例外處理"} exception
   ^{:type DateTime
     :translate/chinese "異動時間"} modify_at
   ^{:type String
+    :optional true
     :translate/chinese "備註"} memo]
 
 
@@ -120,7 +129,7 @@
     :postgres/index true
     :translate/chinese "銀行代號"} bank-no
   ^{:type String
-    :translate/chinese "機構名稱"} name
+    :translate/chinese "銀行名稱"} name
   ^{:type String
     :translate/chinese "地址"} addr
   ^{:type String

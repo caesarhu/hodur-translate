@@ -51,23 +51,28 @@
   [k]
   (-> k name ->SCREAMING_SNAKE_CASE_STRING))
 
+(defn str-or-key?
+  [s]
+  (or (string? s)
+      (keyword? s)))
+
 
 (defn create-column-sql
   [schema]
   (cond-> (str (get-sql-column schema) " " (get-sql-column-type schema))
     (not (:postgres.constraint/optional schema)) (str " NOT NULL")
     ;(:postgres/auto-increment schema) (str " GENERATED ALWAYS AS IDENTITY")
-    (:postgres/auto-increment schema) (str " GENERATED " (-> (:postgres/auto-increment schema)
-                                                             name
-                                                             string/upper-case) " AS IDENTITY")
+    (str-or-key? (:postgres/auto-increment schema)) (str " GENERATED " (-> (:postgres/auto-increment schema)
+                                                                           name
+                                                                           string/upper-case) " AS IDENTITY")
     (:postgres.constraint/unique schema) (str " UNIQUE")
     (:postgres.constraint/primary-key schema) (str " PRIMARY KEY")
     (:postgres/ref schema) (str " REFERENCES " (namespace (:postgres/ref schema))
                                 (parentheses (name (:postgres/ref schema))))
-    (:postgres/ref-update schema) (str " ON UPDATE " (-> (:postgres/ref-update schema)
-                                                         SNAKE_CASE_NAME))
-    (:postgres/ref-update schema) (str " ON UPDATE " (-> (:postgres/ref-delete schema)
-                                                         SNAKE_CASE_NAME))))
+    (str-or-key? (:postgres/ref-update schema)) (str " ON UPDATE " (-> (:postgres/ref-update schema)
+                                                                       SNAKE_CASE_NAME))
+    (str-or-key? (:postgres/ref-update schema)) (str " ON UPDATE " (-> (:postgres/ref-delete schema)
+                                                                       SNAKE_CASE_NAME))))
 
 
 (defn create-column-index-sql
