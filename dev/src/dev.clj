@@ -17,7 +17,6 @@
     [hodur-translate.core :refer :all]
     [hodur-translate.data-spec :as ds]
     [hodur-translate.lacinia-schema :as ls]
-    [hodur-translate.meta-db :refer [meta-schema]]
     [hodur-translate.postgres-schema :as ps]
     [hodur-translate.postgres-sql :as sql]
     [hodur-translate.utils :as utils]

@@ -63,9 +63,10 @@
    (let [out-v (map #(pretty-str % opts) obj-v)
          out-line (map #(vector %1 %2) out-v (repeat "\n\n"))
          out-str (->> out-line
+                      vec
                       flatten
                       (apply str))]
-     (spit file (pretty-str out-str opts))))
+     (spit file out-str)))
   ([file obj-v]
    (spit-code file obj-v nil)))
 

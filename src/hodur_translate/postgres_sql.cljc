@@ -63,14 +63,14 @@
   [schema]
   (cond-> (str (get-sql-column schema) " " (get-sql-column-type schema))
     (not (:postgres.constraint/optional schema)) (str " NOT NULL")
-    ;(:postgres/auto-increment schema) (str " GENERATED ALWAYS AS IDENTITY")
+    (:default schema) (str " DEFAULT " (:default schema))
     (str-or-key? (:postgres/auto-increment schema)) (str " GENERATED " (-> (:postgres/auto-increment schema)
                                                                            name
                                                                            string/upper-case) " AS IDENTITY")
     (:postgres.constraint/unique schema) (str " UNIQUE")
     (:postgres.constraint/primary-key schema) (str " PRIMARY KEY")
     (:postgres/ref schema) (str " REFERENCES " (namespace (:postgres/ref schema))
-                                (parentheses (name (:postgres/ref schema))))
+                                (parentheses (-> schema :postgres/ref name ->snake_case_string)))
     (str-or-key? (:postgres/ref-update schema)) (str " ON UPDATE " (-> (:postgres/ref-update schema)
                                                                        SNAKE_CASE_NAME))
     (str-or-key? (:postgres/ref-delete schema)) (str " ON DELETE " (-> (:postgres/ref-delete schema)
@@ -118,7 +118,7 @@
                      (map name)
                      (map quotation))]
     {:up-sql [(-> (str create-type-header table " AS ENUM "
-                       (parentheses (string/join " " columns)) sql-cmd-end-str)
+                       (parentheses (string/join ", " columns)) sql-cmd-end-str)
                   symbol)]
      :down-sql [(-> (str drop-type-header table sql-cmd-end-str)
                     symbol)]}))

@@ -4,49 +4,49 @@
    :translate/tag true}
  default
 
- ^{:translate/chinese "性別類別"
+ ^{:doc "性別型別"
    :enum true}
  gender-type
  [男 女]
 
- ^{:translate/chinese "間直接類別"
+ ^{:doc "間直接型別"
    :enum true}
  direct-type
  [直接 間接]
 
- ^{:translate/chinese "薪資計算類別"
+ ^{:doc "薪資計算型別"
    :enum true}
  salary-type
  [月薪 計時 計件]
 
- ^{:translate/chinese "員工類別"
+ ^{:doc "員工型別"
    :enum true}
  employee-type
  [回聘 契約正式 契約工讀 計時 計件]
 
- ^{:translate/chinese "費用類別"
+ ^{:doc "費用型別"
    :enum true}
  price-type
  [直接費用 間接費用 研發費用 推銷費用 管理費用 製造費用]
 
- ^{:translate/chinese "員工異動類別"
+ ^{:doc "員工異動型別"
    :enum true}
  employee-change-type
  [到職 離職 復職 停職]
 
- ^{:translate/chinese "月薪期別"
+ ^{:doc "月薪型別"
    :enum true}
  month-type
  [上期 下期]
 
  ^{:translate/chinese "員工基本資料表"
-   :postgres/table-order 100}
+   :postgres/table-order 200}
  employee
  [^{:type Integer
     :postgres/auto-increment :always
     :postgres/primary-key true
     :spec/override clojure.core/pos-int?
-    :translate/chinese "員工質本資料表id"} id
+    :translate/chinese "員工基本資料表id"} id
   ^{:type String
     :postgres/index true
     :postgres/unique true
@@ -61,14 +61,19 @@
   ^{:type Date
     :translate/chinese "生日"} birthday
   ^{:type gender-type
+    :spec/override clojure.core/string?
     :translate/chinese "性別"} gender
   ^{:type direct-type
+    :spec/override clojure.core/string?
     :translate/chinese "間直接"} direct-kind
   ^{:type salary-type
+    :spec/override clojure.core/string?
     :translate/chinese "薪資類別"} salary-kind
   ^{:type employee-type
+    :spec/override clojure.core/string?
     :translate/chinese "員工類別"} employee-kind
   ^{:type price-type
+    :spec/override clojure.core/string?
     :translate/chinese "費用類別"} price-kind
   ^{:type String
     :translate/chinese "戶籍地址"} reg-addr
@@ -77,7 +82,10 @@
     :translate/chinese "通訊地址"} mail-addr
   ^{:type String
     :translate/chinese "單位代號"} unit-id
-  ^{:type String
+  ^{:type bank
+    :spec/override clojure.core/string?
+    :postgres/ref-update :cascade
+    :postgres/ref-delete :cascade
     :optional true
     :translate/chinese "銀行代號"} bank-id
   ^{:type String
@@ -107,32 +115,29 @@
   ^{:type String
     :optional true
     :translate/chinese "特殊例外處理"} exception
-  ^{:type DateTime
-    :translate/chinese "異動時間"} modify_at
+  ^{:type Date
+    :translate/chinese "異動日期"} change-date
   ^{:type String
     :optional true
     :translate/chinese "備註"} memo]
 
 
  ^{:translate/chinese "銀行一覽表"
-   :postgres/table-order 200}
+   :postgres/table-order 100}
  bank
- [^{:type Integer
-    :postgres/auto-increment :always
-    :postgres/primary-key true
-    :spec/override clojure.core/pos-int?
-    :translate/chinese "銀行對照檔id"} id
-  ^{:type String
+ [^{:type String
     :postgres/index true
     :translate/chinese "總行代號"} head-bank-no
   ^{:type String
-    :postgres/index true
-    :translate/chinese "銀行代號"} bank-no
+    :postgres/primary-key true
+    :translate/chinese "銀行代號"} bank-id
   ^{:type String
     :translate/chinese "銀行名稱"} name
   ^{:type String
+    :optional true
     :translate/chinese "地址"} addr
   ^{:type String
+    :optional true
     :translate/chinese "電話"} phone
   ^{:type String
     :optional true
