@@ -71,7 +71,7 @@
                                 (parentheses (name (:postgres/ref schema))))
     (str-or-key? (:postgres/ref-update schema)) (str " ON UPDATE " (-> (:postgres/ref-update schema)
                                                                        SNAKE_CASE_NAME))
-    (str-or-key? (:postgres/ref-update schema)) (str " ON UPDATE " (-> (:postgres/ref-delete schema)
+    (str-or-key? (:postgres/ref-delete schema)) (str " ON DELETE " (-> (:postgres/ref-delete schema)
                                                                        SNAKE_CASE_NAME))))
 
 
