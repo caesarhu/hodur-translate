@@ -17,7 +17,7 @@
   ([file obj-v opts]
    (utils/spit-code file obj-v opts))
   ([file obj-v]
-   ((utils/spit-code file obj-v))))
+   (spit-code file obj-v nil)))
 
 
 (defn init-schema
