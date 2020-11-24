@@ -63,7 +63,7 @@
   [schema]
   (cond-> (str (get-sql-column schema) " " (get-sql-column-type schema))
     (not (:postgres.constraint/optional schema)) (str " NOT NULL")
-    (:default schema) (str " DEFAULT " (:default schema))
+    (:field/default schema) (str " DEFAULT " (:field/default schema))
     (str-or-key? (:postgres/auto-increment schema)) (str " GENERATED " (-> (:postgres/auto-increment schema)
                                                                            name
                                                                            string/upper-case) " AS IDENTITY")

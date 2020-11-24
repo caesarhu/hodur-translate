@@ -99,7 +99,7 @@
     :translate/chinese "職稱"} job-title
   ^{:type String
     :optional true
-    :translate/chinese "職稱-2"} job-title-2
+    :translate/chinese "職稱2"} job-title2
   ^{:type String
     :optional true
     :translate/chinese "住家電話"} phone
@@ -121,6 +121,24 @@
     :optional true
     :translate/chinese "備註"} memo]
 
+ ^{:translate/chinese "員工異動檔"
+   :postgres/table-order 300}
+ employee-change
+ [^{:type Integer
+    :postgres/auto-increment :always
+    :postgres/primary-key true
+    :spec/override clojure.core/pos-int?
+    :translate/chinese "員工異動檔id"} id
+  ^{:type employee-change-type
+    :translate/chinese "異動類別"} change-kind
+  ^{:type Date
+    :translate/chinese "到職日期"} change-day
+  ^{:type DateTime
+    :default "CURRENT_TIMESTAMP"
+    :translate/chinese "輸入異動時間"} change-at
+  ^{:type String
+    :optional true
+    :translate/chinese "備註"} memo]
 
  ^{:translate/chinese "銀行一覽表"
    :postgres/table-order 100}

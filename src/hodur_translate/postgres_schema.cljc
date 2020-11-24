@@ -91,6 +91,7 @@
    :postgres/ref :postgres/ref
    :postgres/ref-update :postgres/ref-update
    :postgres/ref-delete :postgres/ref-delete
+   :field/default :field/default
    :field/optional  :postgres.constraint/optional})
 
 
