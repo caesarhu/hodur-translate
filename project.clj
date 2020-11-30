@@ -19,7 +19,9 @@
                  [metosin/spec-tools "0.10.4"]
                  [clojure.java-time "0.3.2"]
                  [mvxcvi/cljstyle "0.14.0"]
-                 [funcool/datoteka "1.2.0"]]
+                 [funcool/datoteka "1.2.0"]
+                 [honeysql "1.0.444"]
+                 [nilenso/honeysql-postgres "0.2.6"]]
   :plugins [[duct/lein-duct "0.12.1"]]
   :main ^:skip-aot hodur-translate.main
   :resource-paths ["resources" "target/resources"]

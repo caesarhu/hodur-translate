@@ -15,17 +15,16 @@
     [eftest.runner :as eftest]
     [fipp.edn :refer [pprint]]
     [hodur-translate.core :refer :all]
-    [hodur-translate.data-spec :as ds]
-    [hodur-translate.lacinia-schema :as ls]
-    [hodur-translate.postgres-schema :as ps]
-    [hodur-translate.postgres-sql :as sql]
-    [hodur-translate.utils :as utils]
     [integrant.core :as ig]
     [integrant.repl :refer [clear halt go init prep reset]]
     [integrant.repl.state :refer [config system]]
     [java-time :as jt]
-    [spec-tools.core :as st]
-    [hodur-translate.translate :as trans]))
+    [hodur-translate.utils :as utils]
+    [honeysql.core :as sql]
+    [honeysql.helpers :as sqlh]
+    [honeysql.format :as sqlf]
+    [honeysql-postgres.helpers :as psqlh]
+    [hodur-translate.postgres-format :as pf]))
 
 
 (duct/load-hierarchy)
@@ -45,16 +44,6 @@
   [:duct.profile/dev :duct.profile/local])
 
 
-(defn fit-spec
-  ([spec value transformer]
-   (let [res (st/conform spec value transformer)]
-     (if (map? res)
-       res
-       false)))
-  ([spec value]
-   (fit-spec spec value st/strip-extra-keys-transformer)))
-
-
 (defn meta-db
   []
   (init-schema (utils/read-schema "schema.edn")))
@@ -68,3 +57,8 @@
 
 
 (integrant.repl/set-prep! #(duct/prep-config (read-config) profiles))
+
+(def selector '[* {:field/_parent
+                   [:field/name :postgres/primary-key]}])
+
+
