@@ -3,7 +3,7 @@
     [clojure.string :as string]
     [honeysql-postgres.util :as util]
     [honeysql.format :as sqlf :refer [fn-handler format-clause format-modifiers]]
-    ;; multi-methods
+    [honeysql-postgres.format :as psqlf]
     [honeysql.helpers :as sqlh #?(:clj :refer :cljs :refer-macros) [defhelper]]))
 
 
@@ -11,6 +11,14 @@
   [s]
   (str "'" s "'"))
 
+(defmethod fn-handler "primary-key" [_ & args]
+  (let [flag (first args)]
+    (if (true? flag)
+      (str "PRIMARY KEY")
+      (str "PRIMARY KEY" (util/comma-join-args args)))))
+
+(defmethod fn-handler "references" [_ reftable]
+  (str "REFERENCES " (sqlf/to-sql reftable)))
 
 (defmethod fn-handler "identity-always" [_ flag?]
   (when flag?

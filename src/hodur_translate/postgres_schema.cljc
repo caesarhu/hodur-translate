@@ -6,7 +6,8 @@
        :cljs [com.rpl.specter :as s :refer-macros [select select-one transform setval]])
     [datoteka.core :as fs]
     [hodur-translate.postgres-sql :as sql]
-    [hodur-translate.utils :as utils]))
+    [hodur-translate.utils :as utils]
+    [camel-snake-kebab.core :as csk]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Parsing functions
@@ -42,8 +43,8 @@
         is-enum? (-> field :field/type :type/enum)]
     (if is-enum?
       {:postgres/type (keyword "postgres.type" (->kebab-case-string type-name))}
-      {:postgres/type (-> field :field/type :ref-type :postgres/type)
-       :postgres.column/references type-name})))
+      {:postgres/type              (-> field :field/type :ref-type :postgres/type)
+       :postgres.column/references (csk/->kebab-case-keyword type-name)})))
 
 
 (defn get-value-type

@@ -15,87 +15,11 @@
     [honeysql.format :as sqlf]
     [honeysql.helpers :as sqlh]))
 
+(def sql-cmd-end-str ";")
 
 (defn sql-format
   [m]
-  (-> m sql/format first (str ";")))
-
-
-(def sql-cmd-seperater "--;;")
-(def sql-cmd-end-str " ;")
-(def sql-column-seperater " ,")
-(def create-table-header  "CREATE TABLE ")
-(def create-index-header  "CREATE INDEX ")
-(def create-type-header  "CREATE TYPE ")
-(def drop-table-header "DROP TABLE ")
-(def drop-type-header "DROP TYPE ")
-
-
-(defn get-sql-table-snake
-  [schema]
-  (-> schema :db/ident namespace csk/->snake_case_string))
-
-
-(defn get-sql-column
-  [schema]
-  (-> schema :db/ident name csk/->snake_case_string))
-
-
-(defn get-sql-column-type
-  [schema]
-  (let [type (-> schema :db/valueType name)]
-    (if (:postgres/enum schema)
-      (csk/->snake_case_string type)
-      (csk/->SCREAMING_SNAKE_CASE_STRING type))))
-
-
-(defn parentheses
-  [s]
-  (str "( " s " )"))
-
-
-(defn quotation
-  [s]
-  (str "'" s "'"))
-
-
-(defn SNAKE_CASE_NAME
-  [k]
-  (-> k name csk/->SCREAMING_SNAKE_CASE_STRING))
-
-
-(defn str-or-key?
-  [s]
-  (or (string? s)
-      (keyword? s)))
-
-
-(defn create-column-sql
-  [schema]
-  (cond-> (str (get-sql-column schema) " " (get-sql-column-type schema))
-    (not (:postgres.constraint/optional schema)) (str " NOT NULL")
-    (:field/default schema) (str " DEFAULT " (:field/default schema))
-    (str-or-key? (:postgres/auto-increment schema)) (str " GENERATED " (-> (:postgres/auto-increment schema)
-                                                                           name
-                                                                           string/upper-case) " AS IDENTITY")
-    (:postgres.constraint/unique schema) (str " UNIQUE")
-    (:postgres.constraint/primary-key schema) (str " PRIMARY KEY")
-    (:postgres/ref schema) (str " REFERENCES " (namespace (:postgres/ref schema))
-                                (parentheses (-> schema :postgres/ref name csk/->snake_case_string)))
-    (str-or-key? (:postgres/ref-update schema)) (str " ON UPDATE " (-> (:postgres/ref-update schema)
-                                                                       SNAKE_CASE_NAME))
-    (str-or-key? (:postgres/ref-delete schema)) (str " ON DELETE " (-> (:postgres/ref-delete schema)
-                                                                       SNAKE_CASE_NAME))))
-
-
-(defn create-column-index-sql
-  [schema]
-  (when (:postgres/index schema)
-    (let [table (get-sql-table-snake schema)
-          column (get-sql-column schema)]
-      [(symbol sql-cmd-seperater)
-       (->> (str create-index-header table "_" column "_index ON " table " " (parentheses column) sql-cmd-end-str)
-            symbol)])))
+  (-> m sql/format first (str sql-cmd-end-str)))
 
 
 (defn get-schema-table-name
@@ -103,30 +27,13 @@
   (-> postgres-schema :type/kebab-case-name))
 
 
-(defn create-table-sql
-  [postgres-schema]
-  (let [table (get-schema-table-name postgres-schema)
-        columns (:column postgres-schema)
-        create-header (str create-table-header table)
-        column-def (let [str-v (map create-column-sql columns)
-                         header (-> (map #(str % " ,") (drop-last str-v))
-                                    vec)]
-                     (apply list (conj header (last str-v))))
-        index-def (->> (map create-column-index-sql columns)
-                       (filter some?)
-                       (apply concat))]
-    {:up-sql (sp/transform [(sp/walker string?)]
-                           symbol
-                           (concat [create-header column-def ";"] index-def))
-     :down-sql [(symbol (str drop-table-header table sql-cmd-end-str))]}))
-
-
 (defn column-format
   [column]
   (let [useless [:postgres/ident :postgres/type :postgres/tag]
-        {:keys [postgres/ident postgres/type]} column
+        {:keys [postgres/ident postgres/type postgres.column/optional]} column
         params (->> (apply dissoc column useless)
-                    (transform-keys csk/->kebab-case-keyword))]
+                    (transform-keys csk/->kebab-case-keyword)
+                    (merge {:optional optional}))]
     (-> (concat [(-> ident csk/->kebab-case-keyword)
                  (-> type csk/->kebab-case-keyword)]
                 (map #(apply sql/call %) params))
@@ -135,9 +42,14 @@
 (defn table-format
   [postgres-schema]
   (let [table (get-schema-table-name postgres-schema)
-        columns (:column postgres-schema)]
-    (-> (psqlh/create-table table)
-        (psqlh/with-columns [(map column-format columns)]))))
+        columns (:column postgres-schema)
+        base (psqlh/create-table {} table)]
+    (psqlh/with-columns base (->> (map column-format columns)
+                                  vec))))
+
+(defn create-table-sql
+  [postgres-schema]
+  (-> postgres-schema table-format sql-format))
 
 
 (defn create-type-sql
