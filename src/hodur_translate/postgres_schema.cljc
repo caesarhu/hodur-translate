@@ -12,28 +12,38 @@
 ;; Parsing functions
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defn field-type-name
+  [field]
+  (-> field :field/type :type/name))
+
+
 (defmulti  primitive-or-ref-type
   (fn [field]
-    (let [ref-type (-> field :field/type :type/name)
-          dat-type (-> field :postgres/type)]
-      (or dat-type ref-type))))
+    (field-type-name field)))
 
 
-(defmethod primitive-or-ref-type "String" [_] :postgres.type/text)
+(defmethod primitive-or-ref-type "String" [_] {:postgres/type :postgres.type/text})
 
-(defmethod primitive-or-ref-type "Float" [_] :postgres.type/decimal)
+(defmethod primitive-or-ref-type "Float" [_] {:postgres/type :postgres.type/decimal})
 
-(defmethod primitive-or-ref-type "Integer" [_] :postgres.type/bigint)
+(defmethod primitive-or-ref-type "Integer" [_] {:postgres/type :postgres.type/bigint})
 
-(defmethod primitive-or-ref-type "Boolean" [_] :postgres.type/boolean)
+(defmethod primitive-or-ref-type "Boolean" [_] {:postgres/type :postgres.type/boolean})
 
-(defmethod primitive-or-ref-type "Date" [_] :postgres.type/date)
+(defmethod primitive-or-ref-type "Date" [_] {:postgres/type :postgres.type/date})
 
-(defmethod primitive-or-ref-type "DateTime" [_] :postgres.type/timestamp)
+(defmethod primitive-or-ref-type "DateTime" [_] {:postgres/type :postgres.type/timestamp})
 
-(defmethod primitive-or-ref-type "ID" [_] :postgres.type/uuid)
+(defmethod primitive-or-ref-type "ID" [_] {:postgres/type :postgres.type/uuid})
 
-(defmethod primitive-or-ref-type :default [_] :postgres.type/ref)
+
+(defmethod primitive-or-ref-type :default [field]
+  (let [type-name (field-type-name field)
+        is-enum? (-> field :field/type :type/enum)]
+    (if is-enum?
+      {:postgres/type (keyword "postgres.type" (->kebab-case-string type-name))}
+      {:postgres/type (-> field :field/type :ref-type :postgres/type)
+       :postgres.column/references type-name})))
 
 
 (defn get-value-type
@@ -46,20 +56,32 @@
 (defn get-identity
   [type]
   (let [fields (get type :field/_parent)
-        primary-field (sp/select-one [sp/ALL #(:postgres/primary-key %)] fields)]
+        primary-field (sp/select-one [sp/ALL #(:postgres.column/primary-key %)] fields)]
     (when primary-field
-      {:postgres/ref (keyword (name (:type/name type)) (:field/name primary-field))
-       :db/valueType (get-value-type primary-field)})))
+      (get-value-type primary-field))))
 
 
 (defn get-type-identity
   [types type-name]
   (let [type (sp/select-one [sp/ALL #(= type-name (:type/name %))] types)
         is-enum? (get type :type/enum)]
-    (cond
-      is-enum? {:db/valueType (keyword (namespace :postgres.type/ref) type-name)
-                :postgres/enum (keyword type-name)}
-      :else (get-identity type))))
+    (when-not is-enum?
+      (get-identity type))))
+
+
+(defn is-ref-type?
+  [field]
+  (and (-> field field-type-name utils/primary-type? not)
+       (-> field :field/type :type/enum not)))
+
+
+(defn merge-ref-type
+  [types]
+  (sp/transform [sp/ALL :field/_parent sp/ALL #(is-ref-type? %)]
+                (fn [field]
+                  (let [ref-type (get-type-identity types (field-type-name field))]
+                    (assoc-in field [:field/type :ref-type] ref-type)))
+                types))
 
 
 (defn get-cardinality
@@ -84,15 +106,8 @@
 
 
 (def postgres-translate-table
-  {:postgres/index  :postgres/index
-   :postgres/unique :postgres.constraint/unique
-   :postgres/primary-key :postgres.constraint/primary-key
-   :postgres/auto-increment :postgres/auto-increment
-   :postgres/ref :postgres/ref
-   :postgres/ref-update :postgres/ref-update
-   :postgres/ref-delete :postgres/ref-delete
-   :field/default :field/default
-   :field/optional  :postgres.constraint/optional})
+  {:field/default :postgres.column/default
+   :field/optional  :postgres.column/optional})
 
 
 (defn assoc-attributes
@@ -104,41 +119,48 @@
              m field))
 
 
-(defn postgres-process-field
-  [types entity-id is-enum? {:keys [field/name] :as field}]
-  (let [ref-type (-> field :field/type :type/name)]
-    (cond-> {:db/ident (keyword entity-id
-                                (->kebab-case-string name))}
-      (not is-enum?) (assoc :db/valueType (get-value-type field)
-                            :db/cardinality (get-cardinality field))
-      (not is-enum?) (assoc-attributes field)
-      (= :postgres.type/ref (get-value-type field)) (merge (get-type-identity types ref-type))
-
-      :always        (assoc-documentation field))))
+(defn get-postgres-attr
+  [field]
+  (let [postgres? (fn [entry]
+                    (re-find #"postgres" (namespace (key entry))))]
+    (->> (sp/select [sp/ALL #(postgres? %)] field)
+         (into {}))))
 
 
-(defn postgres-get-type
-  [types {:keys [type/name type/enum field/_parent]}]
+(defn process-field
+  [entity-id is-enum? {:keys [field/name] :as field}]
+  (let [postgres-field (cond-> {:postgres/ident (keyword entity-id
+                                                         (->kebab-case-string name))}
+                               ;(not is-enum?) (assoc :postgres/cardinality (get-cardinality field))
+                         (not is-enum?) (merge (get-value-type field))
+                         (not is-enum?) (assoc-attributes field)
+
+                         :always        (assoc-documentation field))]
+    (merge postgres-field (get-postgres-attr field))))
+
+
+(defn get-type
+  [{:keys [type/name type/enum field/_parent]}]
   (let [entity-id (->kebab-case-string name)]
     (->> _parent
          (sort-by :field/name)
          (reduce (fn [c {:keys [postgres/tag] :as field}]
                    (if tag
-                     (conj c (postgres-process-field types entity-id enum field))
+                     (conj c (process-field entity-id enum field))
                      c))
                  []))))
 
 
 (defn type->table
-  [types type]
+  [type]
   (let [table (dissoc type :field/_parent)
-        column (postgres-get-type types type)]
+        column (get-type type)]
     (assoc table :column column)))
 
 
 (defn types->tables
   [types]
-  (->> (map (partial type->table types) types)
+  (->> (map type->table types)
        (sort-by :db/id)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -147,7 +169,8 @@
 
 (defn db-schema
   [conn]
-  (let [types (utils/get-eids-types conn :postgres/tag)
+  (let [types (->> (utils/get-eids-types conn :postgres/tag)
+                   merge-ref-type)
         result (types->tables types)]
     result))
 

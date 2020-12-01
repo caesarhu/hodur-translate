@@ -15,6 +15,15 @@
       StringWriter)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def primary-types (set  ["String" "Float" "Integer" "Boolean" "Date" "DateTime" "ID"]))
+
+
+(defn primary-type?
+  [type]
+  (contains? primary-types type))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Topological Sorting
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

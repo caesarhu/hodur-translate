@@ -1,13 +1,24 @@
 (ns hodur-translate.postgres-sql
   (:require
-    [camel-snake-kebab.core :refer [->kebab-case-string ->snake_case_string ->SCREAMING_SNAKE_CASE_STRING]]
+    [camel-snake-kebab.core :as csk]
+    [camel-snake-kebab.extras :refer [transform-keys]]
     [clojure.string :as string]
     #?(:clj  [com.rpl.specter :as sp]
        :cljs [com.rpl.specter :as s :refer-macros [select select-one transform setval]])
     [datascript.core :as d]
     [datascript.query-v3 :as q]
     [datoteka.core :as fs]
-    [hodur-translate.utils :as utils]))
+    [hodur-translate.postgres-format :as pf]
+    [hodur-translate.utils :as utils]
+    [honeysql-postgres.helpers :as psqlh]
+    [honeysql.core :as sql]
+    [honeysql.format :as sqlf]
+    [honeysql.helpers :as sqlh]))
+
+
+(defn sql-format
+  [m]
+  (-> m sql/format first (str ";")))
 
 
 (def sql-cmd-seperater "--;;")
@@ -22,20 +33,20 @@
 
 (defn get-sql-table-snake
   [schema]
-  (-> schema :db/ident namespace ->snake_case_string))
+  (-> schema :db/ident namespace csk/->snake_case_string))
 
 
 (defn get-sql-column
   [schema]
-  (-> schema :db/ident name ->snake_case_string))
+  (-> schema :db/ident name csk/->snake_case_string))
 
 
 (defn get-sql-column-type
   [schema]
   (let [type (-> schema :db/valueType name)]
     (if (:postgres/enum schema)
-      (->snake_case_string type)
-      (->SCREAMING_SNAKE_CASE_STRING type))))
+      (csk/->snake_case_string type)
+      (csk/->SCREAMING_SNAKE_CASE_STRING type))))
 
 
 (defn parentheses
@@ -50,7 +61,7 @@
 
 (defn SNAKE_CASE_NAME
   [k]
-  (-> k name ->SCREAMING_SNAKE_CASE_STRING))
+  (-> k name csk/->SCREAMING_SNAKE_CASE_STRING))
 
 
 (defn str-or-key?
@@ -70,7 +81,7 @@
     (:postgres.constraint/unique schema) (str " UNIQUE")
     (:postgres.constraint/primary-key schema) (str " PRIMARY KEY")
     (:postgres/ref schema) (str " REFERENCES " (namespace (:postgres/ref schema))
-                                (parentheses (-> schema :postgres/ref name ->snake_case_string)))
+                                (parentheses (-> schema :postgres/ref name csk/->snake_case_string)))
     (str-or-key? (:postgres/ref-update schema)) (str " ON UPDATE " (-> (:postgres/ref-update schema)
                                                                        SNAKE_CASE_NAME))
     (str-or-key? (:postgres/ref-delete schema)) (str " ON DELETE " (-> (:postgres/ref-delete schema)
@@ -89,7 +100,7 @@
 
 (defn get-schema-table-name
   [postgres-schema]
-  (-> postgres-schema :type/snake_case_name name))
+  (-> postgres-schema :type/kebab-case-name))
 
 
 (defn create-table-sql
@@ -110,18 +121,35 @@
      :down-sql [(symbol (str drop-table-header table sql-cmd-end-str))]}))
 
 
+(defn column-format
+  [column]
+  (let [useless [:postgres/ident :postgres/type :postgres/tag]
+        {:keys [postgres/ident postgres/type]} column
+        params (->> (apply dissoc column useless)
+                    (transform-keys csk/->kebab-case-keyword))]
+    (-> (concat [(-> ident csk/->kebab-case-keyword)
+                 (-> type csk/->kebab-case-keyword)]
+                (map #(apply sql/call %) params))
+        vec)))
+
+(defn table-format
+  [postgres-schema]
+  (let [table (get-schema-table-name postgres-schema)
+        columns (:column postgres-schema)]
+    (-> (psqlh/create-table table)
+        (psqlh/with-columns [(map column-format columns)]))))
+
+
 (defn create-type-sql
   [postgres-schema]
   (let [table (get-schema-table-name postgres-schema)
         columns (->> (:column postgres-schema)
-                     (map :db/ident)
-                     (map name)
-                     (map quotation))]
-    {:up-sql [(-> (str create-type-header table " AS ENUM "
-                       (parentheses (string/join ", " columns)) sql-cmd-end-str)
-                  symbol)]
-     :down-sql [(-> (str drop-type-header table sql-cmd-end-str)
-                    symbol)]}))
+                     (map :postgres/ident)
+                     (map name))]
+    {:up-sql [(->> (pf/create-enum table columns)
+                   sql-format)]
+     :down-sql [(->> (pf/drop-enum table)
+                     sql-format)]}))
 
 
 (defn create-up-sql
@@ -154,8 +182,8 @@
   (let [table (get-schema-table-name postgres-schema)
         order (:postgres/table-order postgres-schema)
         base-name (string/join "-" [(number-header order) create-file-header table])]
-    {:up-name (->kebab-case-string (str base-name up-footer))
-     :down-name (->kebab-case-string (str base-name down-footer))}))
+    {:up-name (csk/->kebab-case-string (str base-name up-footer))
+     :down-name (csk/->kebab-case-string (str base-name down-footer))}))
 
 
 (defn make-schema-sql

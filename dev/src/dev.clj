@@ -1,7 +1,7 @@
 (ns dev
   (:refer-clojure :exclude [test])
   (:require
-    [camel-snake-kebab.core :refer [->kebab-case-string ->snake_case_string ->SCREAMING_SNAKE_CASE_STRING]]
+    [camel-snake-kebab.core :as csk :refer [->kebab-case-string ->snake_case_string ->SCREAMING_SNAKE_CASE_STRING]]
     [cjsauer.disqualified :refer [qualify-map unqualify-map]]
     [clojure.java.io :as io]
     [clojure.repl :refer :all]
@@ -15,14 +15,17 @@
     [eftest.runner :as eftest]
     [fipp.edn :refer [pprint]]
     [hodur-translate.core :refer :all]
+    [hodur-translate.postgres-schema :as ps]
+    [hodur-translate.postgres-sql :as hps]
+    [hodur-translate.utils :as utils]
+    [honeysql.core :as sql]
+    [honeysql.format :as sqlf]
+    [honeysql.helpers :as sqlh]
     [integrant.core :as ig]
     [integrant.repl :refer [clear halt go init prep reset]]
     [integrant.repl.state :refer [config system]]
     [java-time :as jt]
-    [hodur-translate.utils :as utils]
-    [honeysql.core :as sql]
-    [honeysql.helpers :as sqlh]
-    [honeysql.format :as sqlf]
+    [honeysql-postgres.format :as psqlf]
     [honeysql-postgres.helpers :as psqlh]
     [hodur-translate.postgres-format :as pf]))
 
@@ -58,7 +61,9 @@
 
 (integrant.repl/set-prep! #(duct/prep-config (read-config) profiles))
 
-(def selector '[* {:field/_parent
-                   [:field/name :postgres/primary-key]}])
+
+(def selector
+  '[* {:field/_parent
+       [:field/name :postgres/primary-key]}])
 
 
