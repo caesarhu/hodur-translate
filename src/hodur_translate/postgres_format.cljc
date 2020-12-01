@@ -11,11 +11,20 @@
   [s]
   (str "'" s "'"))
 
+(defmethod fn-handler "unique" [_ & args]
+  (let [flag (first args)]
+    (if (true? flag)
+      (str "UNIQUE")
+      (when flag
+        (str "UNIQUE" (util/comma-join-args args))))))
+
+
 (defmethod fn-handler "primary-key" [_ & args]
   (let [flag (first args)]
     (if (true? flag)
       (str "PRIMARY KEY")
-      (str "PRIMARY KEY" (util/comma-join-args args)))))
+      (when flag
+        (str "PRIMARY KEY" (util/comma-join-args args))))))
 
 (defmethod fn-handler "references" [_ reftable]
   (str "REFERENCES " (sqlf/to-sql reftable)))
@@ -101,8 +110,8 @@
               sqlf/paren-wrap))))
 
 
-(defhelper create-index [m index-name]
-  (assoc m :create-index (sqlh/collify index-name)))
+(defhelper create-index [m params]
+  (assoc m :create-index (apply sqlh/collify params)))
 
 
 (defmethod format-clause :drop-index [[_ params] _]

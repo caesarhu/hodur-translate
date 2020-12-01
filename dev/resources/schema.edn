@@ -40,6 +40,7 @@
  [上期 下期]
 
  ^{:translate/chinese "員工基本資料檔"
+   :postgres.table/index [:idx_employee_by_name :employee :name]
    :postgres.table/table-order 200}
  employee
  [^{:type Integer

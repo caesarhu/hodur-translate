@@ -1,6 +1,6 @@
 (ns hodur-translate.postgres-schema
   (:require
-    [camel-snake-kebab.core :refer [->kebab-case-string ->snake_case_string ->SCREAMING_SNAKE_CASE_STRING]]
+    [camel-snake-kebab.core :as csk]
     [clojure.string :as string]
     #?(:clj  [com.rpl.specter :as sp]
        :cljs [com.rpl.specter :as s :refer-macros [select select-one transform setval]])
@@ -42,9 +42,9 @@
   (let [type-name (field-type-name field)
         is-enum? (-> field :field/type :type/enum)]
     (if is-enum?
-      {:postgres/type (keyword "postgres.type" (->kebab-case-string type-name))}
+      {:postgres/type (keyword "postgres.type" (csk/->kebab-case-string type-name))}
       {:postgres/type              (-> field :field/type :ref-type :postgres/type)
-       :postgres.column/references (csk/->kebab-case-keyword type-name)})))
+       :postgres.column/references (csk/->snake_case_keyword type-name)})))
 
 
 (defn get-value-type
@@ -131,7 +131,7 @@
 (defn process-field
   [entity-id is-enum? {:keys [field/name] :as field}]
   (let [postgres-field (cond-> {:postgres/ident (keyword entity-id
-                                                         (->kebab-case-string name))}
+                                                         (csk/->kebab-case-string name))}
                                ;(not is-enum?) (assoc :postgres/cardinality (get-cardinality field))
                          (not is-enum?) (merge (get-value-type field))
                          (not is-enum?) (assoc-attributes field)
@@ -142,7 +142,7 @@
 
 (defn get-type
   [{:keys [type/name type/enum field/_parent]}]
-  (let [entity-id (->kebab-case-string name)]
+  (let [entity-id (csk/->kebab-case-string name)]
     (->> _parent
          (sort-by :field/name)
          (reduce (fn [c {:keys [postgres/tag] :as field}]

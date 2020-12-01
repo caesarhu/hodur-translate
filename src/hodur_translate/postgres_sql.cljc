@@ -16,6 +16,7 @@
     [honeysql.helpers :as sqlh]))
 
 (def sql-cmd-end-str ";")
+(def statements-seperator "\n--;;\n")
 
 (defn sql-format
   [m]
@@ -47,9 +48,26 @@
     (psqlh/with-columns base (->> (map column-format columns)
                                   vec))))
 
+(defn index-format
+  [params]
+  (-> (pf/create-index params)
+      sql-format))
+
+(defn create-index-sql
+  [postgres-schema]
+  (when-let [index (:postgres.table/index postgres-schema)]
+    (let [indexes (if (coll? (first index))
+                    index
+                    [index])]
+      (map index-format indexes))))
+
 (defn create-table-sql
   [postgres-schema]
-  (-> postgres-schema table-format sql-format))
+  (let [table (get-schema-table-name postgres-schema)]
+    {:up-sql (concat [(-> postgres-schema table-format sql-format)]
+                     (create-index-sql postgres-schema))
+     :down-sql [(->> (psqlh/drop-table table)
+                     sql-format)]}))
 
 
 (defn create-type-sql
@@ -70,13 +88,16 @@
     (:type/enum postgres-schema) (create-type-sql postgres-schema)
     :else (create-table-sql postgres-schema)))
 
+(defn sql-format-style
+  [s]
+  (-> (string/replace s #"\(" "\n(")
+      (string/replace #"," ",\n")
+      utils/cljstyle-str))
 
 (defn make-sql-str
-  ([sql-v opts]
-   (->> (map #(utils/pretty-str % opts) sql-v)
-        (string/join)))
-  ([sql-v]
-   (make-sql-str sql-v nil)))
+  [sql-v]
+  (->> (map sql-format-style sql-v)
+       (string/join statements-seperator)))
 
 
 (defn number-header
@@ -91,7 +112,7 @@
 
 (defn make-ragtime-filename
   [postgres-schema]
-  (let [table (get-schema-table-name postgres-schema)
+  (let [table (-> (get-schema-table-name postgres-schema) name)
         order (:postgres/table-order postgres-schema)
         base-name (string/join "-" [(number-header order) create-file-header table])]
     {:up-name (csk/->kebab-case-string (str base-name up-footer))
