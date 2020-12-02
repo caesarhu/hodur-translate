@@ -61,6 +61,14 @@
    (ds/schema m)))
 
 
+(defn spit-data-spec
+  ([path conn qualify?]
+   (let [result (ds/schema conn qualify?)]
+     (utils/spit-code path result)))
+  ([path conn]
+   (spit-data-spec path conn nil)))
+
+
 (defn postgres-schema
   [conn]
   (ps/schema conn))

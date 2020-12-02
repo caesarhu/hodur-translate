@@ -73,7 +73,9 @@
                       flatten
                       (apply str))]
      (spit file out-str)
-     (fix/fix-sources [file])))
+     (if (fix/fix-sources [file])
+       (println (str file " output success!"))
+       (println (str file " output fail!")))))
   ([file obj-v]
    (spit-code file obj-v nil)))
 
