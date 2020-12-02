@@ -147,7 +147,7 @@
   ^{:type Date
     :translate/chinese "異動日期"} change-day
   ^{:type DateTime
-    :default :CURRENT_TIMESTAMP
+    :default CURRENT_TIMESTAMP
     :translate/chinese "輸入異動時間"} change-at
   ^{:type String
     :optional true

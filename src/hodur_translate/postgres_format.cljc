@@ -62,10 +62,7 @@
 
 
 (defmethod format-clause :create-enum [[_ [enum-name enum-values]] _]
-  (let [values-str (->> enum-values
-                        (map quotation-str)
-                        (sqlf/comma-join)
-                        (sqlf/paren-wrap))]
+  (let [values-str (util/comma-join-args enum-values)]
     (str "CREATE TYPE " (-> enum-name
                             util/get-first
                             sqlf/to-sql) " AS ENUM" values-str)))

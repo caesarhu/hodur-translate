@@ -17,11 +17,31 @@
   (:import (com.github.vertical_blank.sqlformatter SqlFormatter)))
 
 (def sql-cmd-end-str ";")
+(def string-quote "'")
 (def statements-seperator "\n--;;\n")
 
-(defn sql-format
+;;wrap strings in quotes
+(defn sql-param [param]
+  (if
+    (string? param) (str string-quote param string-quote)
+                    (str param)))
+
+;;recursively get rid of those pesky "?" by replacing them
+;;with the parameter list
+(defn replace-params
+  [sql-str params]
+  (if (empty? params)
+    sql-str
+    (let [param (first params)
+          new-str (string/replace-first sql-str #"\?" (sql-param param))]
+      (recur new-str (rest params)))))
+
+(defn sql-command
   [m]
-  (-> m sql/format first (str sql-cmd-end-str)))
+  (let [jdbc-cmd (sql/format m)]
+    (if (< 1 (count jdbc-cmd))
+      (replace-params (first jdbc-cmd) (rest jdbc-cmd))
+      (first jdbc-cmd))))
 
 
 (defn get-schema-table-name
@@ -52,7 +72,7 @@
 (defn index-format
   [params]
   (-> (pf/create-index params)
-      sql-format))
+      sql-command))
 
 (defn create-index-sql
   [postgres-schema]
@@ -65,10 +85,10 @@
 (defn create-table-sql
   [postgres-schema]
   (let [table (get-schema-table-name postgres-schema)]
-    {:up-sql (concat [(-> postgres-schema table-format sql-format)]
+    {:up-sql (concat [(-> postgres-schema table-format sql-command)]
                      (create-index-sql postgres-schema))
      :down-sql [(->> (psqlh/drop-table table)
-                     sql-format)]}))
+                     sql-command)]}))
 
 
 (defn create-type-sql
@@ -78,9 +98,9 @@
                      (map :postgres/ident)
                      (map name))]
     {:up-sql [(->> (pf/create-enum table columns)
-                   sql-format)]
+                   sql-command)]
      :down-sql [(->> (pf/drop-enum table)
-                     sql-format)]}))
+                     sql-command)]}))
 
 
 (defn create-up-sql
