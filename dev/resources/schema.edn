@@ -157,7 +157,7 @@
    :postgres.table/table-order 100}
  bank
  [^{:type String
-    :postgres.column/generate-column "LEFT(bank-id, 3)"
+    :postgres.column/generate-column "LEFT(bank_id, 3)"
     :translate/chinese "總行代號"} head-id
   ^{:type String
     :postgres.column/primary-key true

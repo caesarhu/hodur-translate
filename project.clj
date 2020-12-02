@@ -1,4 +1,4 @@
-(defproject caesarhu/hodur-translate "0.1.14"
+(defproject caesarhu/hodur-translate "0.1.15"
   :description "hodur plugins, postgres supported"
   :url "https://github.com/caesarhu/hodur-translate.git"
   :license {:name "Apache License, Version 2.0."
@@ -21,7 +21,8 @@
                  [mvxcvi/cljstyle "0.14.0"]
                  [funcool/datoteka "1.2.0"]
                  [honeysql "1.0.444"]
-                 [nilenso/honeysql-postgres "0.2.6"]]
+                 [nilenso/honeysql-postgres "0.2.6"]
+                 [com.github.vertical-blank/sql-formatter "1.0.3"]]
   :plugins [[duct/lein-duct "0.12.1"]]
   :main ^:skip-aot hodur-translate.main
   :resource-paths ["resources" "target/resources"]

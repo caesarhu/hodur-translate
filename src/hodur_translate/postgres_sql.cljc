@@ -13,7 +13,8 @@
     [honeysql-postgres.helpers :as psqlh]
     [honeysql.core :as sql]
     [honeysql.format :as sqlf]
-    [honeysql.helpers :as sqlh]))
+    [honeysql.helpers :as sqlh])
+  (:import (com.github.vertical_blank.sqlformatter SqlFormatter)))
 
 (def sql-cmd-end-str ";")
 (def statements-seperator "\n--;;\n")
@@ -88,15 +89,13 @@
     (:type/enum postgres-schema) (create-type-sql postgres-schema)
     :else (create-table-sql postgres-schema)))
 
-(defn sql-format-style
+(defn sql-style
   [s]
-  (-> (string/replace s #"\(" "\n(")
-      (string/replace #"," ",\n")
-      utils/cljstyle-str))
+  (.. SqlFormatter (format s)))
 
 (defn make-sql-str
   [sql-v]
-  (->> (map sql-format-style sql-v)
+  (->> (map sql-style sql-v)
        (string/join statements-seperator)))
 
 
@@ -113,7 +112,7 @@
 (defn make-ragtime-filename
   [postgres-schema]
   (let [table (-> (get-schema-table-name postgres-schema) name)
-        order (:postgres/table-order postgres-schema)
+        order (:postgres.table/table-order postgres-schema)
         base-name (string/join "-" [(number-header order) create-file-header table])]
     {:up-name (csk/->kebab-case-string (str base-name up-footer))
      :down-name (csk/->kebab-case-string (str base-name down-footer))}))
@@ -134,7 +133,7 @@
 
 (defn create-order
   [schema-v]
-  (let [order-exist (->> (map :postgres/table-order schema-v)
+  (let [order-exist (->> (map :postgres.table/table-order schema-v)
                          (filter some?)
                          set)
         order-v (->> (range 1 (inc (count schema-v)))
@@ -145,8 +144,8 @@
 (defn set-table-order
   [schema-v]
   (let [new-order (create-order schema-v)
-        schema-map (group-by #(nil? (:postgres/table-order %)) schema-v)
+        schema-map (group-by #(nil? (:postgres.table/table-order %)) schema-v)
         unorder-schema (get schema-map true)
         ordered-schema (get schema-map false)]
-    (-> (map #(assoc %1 :postgres/table-order %2) unorder-schema new-order)
+    (-> (map #(assoc %1 :postgres.table/table-order %2) unorder-schema new-order)
         (concat ordered-schema))))
