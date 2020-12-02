@@ -39,9 +39,7 @@
 (defn sql-command
   [m]
   (let [jdbc-cmd (sql/format m)]
-    (if (< 1 (count jdbc-cmd))
-      (replace-params (first jdbc-cmd) (rest jdbc-cmd))
-      (first jdbc-cmd))))
+    (replace-params (first jdbc-cmd) (rest jdbc-cmd))))
 
 
 (defn get-schema-table-name
