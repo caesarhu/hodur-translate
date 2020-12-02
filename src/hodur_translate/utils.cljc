@@ -9,7 +9,9 @@
     #?(:clj  [com.rpl.specter :as sp]
        :cljs [com.rpl.specter :as s :refer-macros [select select-one transform setval]])
     [datascript.core :as d]
-    [datascript.query-v3 :as q])
+    [datascript.query-v3 :as q]
+    [cljstyle.task.core :as fix]
+    [cljstyle.task.core :as fix])
   (:import
     (java.io
       StringWriter)))
@@ -46,11 +48,6 @@
 (def default-cljstyle
   config/default-config)
 
-
-(def sql-style
-  (sp/setval [:rules :indentation :list-indent] 0 default-cljstyle))
-
-
 (defn cljstyle-str
   ([s opts]
    (cf/reformat-string s (merge default-cljstyle opts)))
@@ -75,7 +72,8 @@
                       vec
                       flatten
                       (apply str))]
-     (spit file out-str)))
+     (spit file out-str)
+     (fix/fix-sources [file])))
   ([file obj-v]
    (spit-code file obj-v nil)))
 
