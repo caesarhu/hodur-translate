@@ -1,5 +1,6 @@
 (ns hodur-translate.postgres-sql
   (:require
+    [clojure.spec.alpha :as s]
     [camel-snake-kebab.core :as csk]
     [camel-snake-kebab.extras :refer [transform-keys]]
     [clojure.string :as string]
@@ -21,10 +22,15 @@
 (def statements-seperator "\n--;;\n")
 
 ;;wrap strings in quotes
-(defn sql-param [param]
-  (if
-    (string? param) (str string-quote param string-quote)
-                    (str param)))
+(defn sql-param
+  [param]
+  (if (string? param)
+    (str string-quote param string-quote)
+    (str param)))
+
+(s/fdef sql-param
+  :args (s/cat :param string?)
+  :ret string?)
 
 ;;recursively get rid of those pesky "?" by replacing them
 ;;with the parameter list
@@ -36,10 +42,21 @@
           new-str (string/replace-first sql-str #"\?" (sql-param param))]
       (recur new-str (rest params)))))
 
+(s/fdef replace-params
+  :args (s/cat :sql-str string? :params (s/nilable seq?))
+  :ret string?)
+
+(defn ->command
+  [sql-v]
+  (replace-params (first sql-v) (rest sql-v)))
+
 (defn sql-command
   [m]
-  (let [jdbc-cmd (sql/format m)]
-    (replace-params (first jdbc-cmd) (rest jdbc-cmd))))
+  (-> m sql/format ->command))
+
+(s/fdef sql-command
+  :args (s/cat :m (s/map-of keyword? any?))
+  :ret string?)
 
 
 (defn get-schema-table-name
@@ -54,18 +71,16 @@
         params (->> (apply dissoc column useless)
                     (transform-keys csk/->kebab-case-keyword)
                     (merge {:optional optional}))]
-    (-> (concat [(-> ident csk/->kebab-case-keyword)
-                 (-> type csk/->kebab-case-keyword)]
-                (map #(apply sql/call %) params))
-        vec)))
+    (concat [(-> ident csk/->kebab-case-keyword)
+             (-> type csk/->kebab-case-keyword)]
+            (map #(apply sql/call %) params))))
 
 (defn table-format
   [postgres-schema]
   (let [table (get-schema-table-name postgres-schema)
         columns (:column postgres-schema)
         base (psqlh/create-table {} table)]
-    (psqlh/with-columns base (->> (map column-format columns)
-                                  vec))))
+    (psqlh/with-columns base (map column-format columns))))
 
 (defn index-format
   [params]

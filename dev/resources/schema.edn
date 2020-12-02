@@ -67,8 +67,9 @@
     :optional true
     :spec/override clojure.core/string?
     :translate/chinese "間直接"} direct-kind
-  ^{:type salary-type
+  ^{:type String
     :optional true
+    :postgres.column/generate-column "CASE employee_kind WHEN '計時' THEN '計時' WHEN '計件' THEN '計件' ELSE '月薪' END"
     :spec/override clojure.core/string?
     :translate/chinese "薪資類別"} salary-kind
   ^{:type employee-type
@@ -147,13 +148,14 @@
   ^{:type Date
     :translate/chinese "異動日期"} change-day
   ^{:type DateTime
-    :default CURRENT_TIMESTAMP
+    :default :CURRENT_TIMESTAMP
     :translate/chinese "輸入異動時間"} change-at
   ^{:type String
     :optional true
     :translate/chinese "備註"} memo]
 
  ^{:translate/chinese "銀行一覽表"
+   :postgres.table/index [:idx_bank_by_head :bank :head_id]
    :postgres.table/table-order 100}
  bank
  [^{:type String

@@ -13,8 +13,7 @@
     [cljstyle.task.core :as fix]
     [cljstyle.task.core :as fix])
   (:import
-    (java.io
-      StringWriter)))
+    (java.io StringWriter)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
