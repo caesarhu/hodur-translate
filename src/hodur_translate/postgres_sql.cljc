@@ -19,7 +19,7 @@
 
 (def sql-cmd-end-str ";")
 (def string-quote "'")
-(def statements-seperator "\n--;;\n")
+(def statement-separator "\n--;;\n")
 
 ;;wrap strings in quotes
 (defn sql-param
@@ -129,7 +129,8 @@
 (defn make-sql-str
   [sql-v]
   (->> (map sql-style sql-v)
-       (string/join statements-seperator)))
+       (map #(str % sql-cmd-end-str))
+       (string/join statement-separator)))
 
 
 (defn number-header
