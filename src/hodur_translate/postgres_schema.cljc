@@ -170,7 +170,7 @@
 
 (defn db-schema
   [conn]
-  (let [types (->> (utils/get-eids-types conn :postgres/tag)
+  (let [types (->> (utils/get-id-types conn :postgres/tag)
                    merge-ref-type)
         result (types->tables types)]
     result))
