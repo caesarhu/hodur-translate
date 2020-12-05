@@ -22,7 +22,7 @@
                  [funcool/datoteka "1.2.0"]
                  [honeysql "1.0.444"]
                  [nilenso/honeysql-postgres "0.2.6"]
-                 [com.github.vertical-blank/sql-formatter "1.0.3"]]
+                 [caesarhu/sql-formatter "0.1.0"]]
   :plugins [[duct/lein-duct "0.12.1"]]
   :main ^:skip-aot hodur-translate.main
   :resource-paths ["resources" "target/resources"]

@@ -13,48 +13,18 @@
     [hodur-translate.utils :as utils]
     [honeysql-postgres.helpers :as psqlh]
     [honeysql.core :as sql]
+    [sql-formatter.core :refer [sql-format sql-command]]
     [honeysql.format :as sqlf]
-    [honeysql.helpers :as sqlh])
-  (:import (com.github.vertical_blank.sqlformatter SqlFormatter)))
+    [honeysql.helpers :as sqlh]))
 
 (def sql-cmd-end-str ";")
-(def string-quote "'")
 (def statement-separator "\n--;;\n")
 
-;;wrap strings in quotes
-(defn sql-param
-  [param]
-  (if (string? param)
-    (str string-quote param string-quote)
-    (str param)))
-
-(s/fdef sql-param
-  :args (s/cat :param string?)
-  :ret string?)
-
-;;recursively get rid of those pesky "?" by replacing them
-;;with the parameter list
-(defn replace-params
-  [sql-str params]
-  (if (empty? params)
-    sql-str
-    (let [param (first params)
-          new-str (string/replace-first sql-str #"\?" (sql-param param))]
-      (recur new-str (rest params)))))
-
-(s/fdef replace-params
-  :args (s/cat :sql-str string? :params (s/nilable seq?))
-  :ret string?)
-
-(defn ->command
-  [sql-v]
-  (replace-params (first sql-v) (rest sql-v)))
-
-(defn sql-command
+(defn sql->cmd
   [m]
-  (-> m sql/format ->command))
+  (-> m sql/format sql-command))
 
-(s/fdef sql-command
+(s/fdef sql->cmd
   :args (s/cat :m (s/map-of keyword? any?))
   :ret string?)
 
@@ -85,7 +55,7 @@
 (defn index-format
   [params]
   (-> (pf/create-index params)
-      sql-command))
+      sql->cmd))
 
 (defn create-index-sql
   [postgres-schema]
@@ -98,10 +68,10 @@
 (defn create-table-sql
   [postgres-schema]
   (let [table (get-schema-table-name postgres-schema)]
-    {:up-sql (concat [(-> postgres-schema table-format sql-command)]
+    {:up-sql (concat [(-> postgres-schema table-format sql->cmd)]
                      (create-index-sql postgres-schema))
      :down-sql [(->> (psqlh/drop-table table)
-                     sql-command)]}))
+                     sql->cmd)]}))
 
 
 (defn create-type-sql
@@ -111,9 +81,9 @@
                      (map :postgres/ident)
                      (map name))]
     {:up-sql [(->> (pf/create-enum table columns)
-                   sql-command)]
+                   sql->cmd)]
      :down-sql [(->> (pf/drop-enum table)
-                     sql-command)]}))
+                     sql->cmd)]}))
 
 
 (defn create-up-sql
@@ -122,13 +92,9 @@
     (:type/enum postgres-schema) (create-type-sql postgres-schema)
     :else (create-table-sql postgres-schema)))
 
-(defn sql-style
-  [s]
-  (.. SqlFormatter (format s)))
-
 (defn make-sql-str
   [sql-v]
-  (->> (map sql-style sql-v)
+  (->> (map sql-format sql-v)
        (map #(str % sql-cmd-end-str))
        (string/join statement-separator)))
 
