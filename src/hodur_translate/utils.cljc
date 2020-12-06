@@ -11,7 +11,6 @@
     [datascript.core :as d]
     [datascript.query-v3 :as q]
     [cljstyle.task.core :as fix]
-    [cljstyle.task.core :as fix]
     [com.rpl.specter :as sp])
   (:import
     (java.io StringWriter)))

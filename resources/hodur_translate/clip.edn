@@ -1,0 +1,12 @@
+{:database-uri #profile {:default #env JDBC_DATABASE_URL
+                         :dev #or [#env JDBC_DATABASE_URL
+                                   "jdbc:postgresql://localhost:15432/bonus_db?user=shun&password=fuck1999"]}
+ :migratus {:store :database
+            :migration-dir "migrations"
+            :db {:connection-uri #ref [:database-uri]}}
+ :schema-path "schema.edn"
+
+ :components
+ {:meta-db
+  {:start
+   (hodur-translate.core/init-db (hodur-translate.utils/read-schema #ref [:schema-path]))}}}

@@ -22,7 +22,9 @@
                  [funcool/datoteka "1.2.0"]
                  [honeysql "1.0.444"]
                  [nilenso/honeysql-postgres "0.2.6"]
-                 [caesarhu/sql-formatter "0.1.0"]]
+                 [caesarhu/sql-formatter "0.1.0"]
+                 [juxt/clip "0.20.0"]
+                 [aero/aero "1.1.6"]]
   :plugins [[duct/lein-duct "0.12.1"]]
   :main ^:skip-aot hodur-translate.main
   :resource-paths ["resources" "target/resources"]
@@ -39,4 +41,9 @@
                   :dependencies   [[integrant/repl "0.3.2"]
                                    [hawk "0.2.11"]
                                    [eftest "0.5.9"]
-                                   [aero "1.1.6"]]}})
+                                   [seancorfield/next.jdbc "1.1.613"]
+                                   [org.postgresql/postgresql "42.2.18"]
+                                   [migratus "1.3.3"]
+                                   [com.taoensso/timbre "5.1.0"]
+                                   [com.fzakaria/slf4j-timbre "0.3.20"]
+                                   [org.clojure/tools.namespace "1.1.0"]]}})
