@@ -11,3 +11,7 @@
   (stop)
   system)
 
+(defn meta-db
+  []
+  (:meta-db system))
+
