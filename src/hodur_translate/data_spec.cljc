@@ -134,3 +134,47 @@
       first
       (= 'spec-tools.data-spec/spec)))
 
+(defn take-field-key
+  [k-or-opt]
+  (if (keyword? k-or-opt)
+    [k-or-opt]
+    [(last k-or-opt) {:optional 'true}]))
+
+(defn take-field-spec
+  [fspec]
+  (if (symbol? fspec)
+    fspec
+    (last fspec)))
+
+(defn data-field->malli
+  [entry]
+  (let [k-or-opt (-> (key entry)
+                     take-field-key)
+        fspec (-> (val entry)
+                  take-field-spec)]
+    (if (second k-or-opt)
+      (->> (concat k-or-opt [[:maybe fspec]])
+           vec)
+      (->> (concat k-or-opt [fspec])
+           vec))))
+
+(defn data->malli
+  [data]
+  (let [[_ mname spec-map] data
+        malli-name (symbol (str "malli-" mname))
+        malli-map (->> (map data-field->malli spec-map)
+                       (into [:map]))]
+    (list clojure-def malli-name malli-map)))
+
+(defn data-spec->malli
+  [data-spec]
+  (let [useful-spec (filter (complement spec-name?) data-spec)]
+    (map data->malli useful-spec)))
+
+(defn malli-spec
+  ([meta-db qualify?]
+   (-> (schema meta-db qualify?)
+       data-spec->malli))
+  ([meta-db]
+   (malli-spec meta-db false)))
+

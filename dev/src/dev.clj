@@ -7,7 +7,8 @@
     [hodur-translate.core :refer :all]
     [migratus.core :as migratus]
     [malli.core :as m]
-    [hodur-translate.data-spec :as ds]))
+    [hodur-translate.data-spec :as ds]
+    [com.rpl.specter :as sp]))
 
 (set-init! (fn [] (config :dev)))
 

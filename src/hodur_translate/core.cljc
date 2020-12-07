@@ -68,6 +68,13 @@
   ([path conn]
    (spit-data-spec path conn nil)))
 
+(defn spit-malli-spec
+  ([path conn qualify?]
+   (let [result (ds/malli-spec conn qualify?)]
+     (utils/spit-code path result)))
+  ([path conn]
+   (spit-malli-spec path conn false)))
+
 
 (defn postgres-schema
   [conn]
@@ -79,7 +86,7 @@
   (ps/save-schema-sql schema-v path))
 
 
-(defn save-db-sql
-  [conn path]
+(defn spit-db-sql
+  [path conn]
   (ps/save-db-sql conn path))
 
