@@ -1,10 +1,13 @@
 (ns dev
   (:require
     [hodur-translate.utils :as utils]
+    [fipp.edn :refer [pprint]]
     [juxt.clip.repl :refer [start stop set-init! reset system]]
     [hodur-translate.config :refer [config]]
     [hodur-translate.core :refer :all]
-    [migratus.core :as migratus]))
+    [migratus.core :as migratus]
+    [malli.core :as m]
+    [hodur-translate.data-spec :as ds]))
 
 (set-init! (fn [] (config :dev)))
 

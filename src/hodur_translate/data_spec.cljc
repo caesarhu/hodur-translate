@@ -79,7 +79,7 @@
    (transform-vec m false)))
 
 
-(defn ->data-spec*
+(defn ->data-spec
   ([m qualify?]
    (let [transformed (-> m
                          (switch-symbol spec-nilable data-spec-maybe)
@@ -88,7 +88,7 @@
                         (into {}))
                    qualify?)))
   ([m]
-   (->data-spec* m false)))
+   (->data-spec m false)))
 
 
 (defn generate-data
@@ -108,18 +108,13 @@
 
 (defn spec->data-spec
   ([m qualify?]
-   (let [spec-map (->data-spec* m qualify?)
+   (let [spec-map (->data-spec m qualify?)
          spec-map-keys (keys spec-map)]
      (->> (map #(list (generate-data spec-map %)
                       (generate-spec %)) spec-map-keys)
           (reduce concat))))
   ([m]
    (spec->data-spec m false)))
-
-
-(defn ^:private eval-default-prefix
-  []
-  (eval '(str (ns-name *ns*))))
 
 
 (defn schema
@@ -132,4 +127,10 @@
   ([meta-db]
    (schema meta-db false)))
 
+(defn spec-name?
+  [v]
+  (-> v
+      last
+      first
+      (= 'spec-tools.data-spec/spec)))
 

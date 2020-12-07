@@ -22,7 +22,8 @@
                  [nilenso/honeysql-postgres "0.2.6"]
                  [caesarhu/sql-formatter "0.1.0"]
                  [juxt/clip "0.20.0"]
-                 [aero/aero "1.1.6"]]
+                 [aero/aero "1.1.6"]
+                 [metosin/malli "0.2.1"]]
   :main ^:skip-aot hodur-translate.main
   :resource-paths ["resources" "target/resources"]
   :prep-tasks     ["javac" "compile" ["run" ":duct/compiler"]]
@@ -35,6 +36,7 @@
    :project/dev  {:source-paths   ["dev/src"]
                   :resource-paths ["dev/resources"]
                   :dependencies   [[seancorfield/next.jdbc "1.1.613"]
+                                   [fipp "0.6.23"]
                                    [org.postgresql/postgresql "42.2.18"]
                                    [migratus "1.3.3"]
                                    ;[com.taoensso/timbre "5.1.0"]
