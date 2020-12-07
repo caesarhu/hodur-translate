@@ -23,7 +23,8 @@
                  [caesarhu/sql-formatter "0.1.0"]
                  [juxt/clip "0.20.0"]
                  [aero/aero "1.1.6"]
-                 [metosin/malli "0.2.1"]]
+                 [metosin/malli "0.2.1"]
+                 [malli-schemas/malli-schemas "0.1.0"]]
   :main ^:skip-aot hodur-translate.main
   :resource-paths ["resources" "target/resources"]
   :prep-tasks     ["javac" "compile" ["run" ":duct/compiler"]]

@@ -142,9 +142,12 @@
 
 (defn take-field-spec
   [fspec]
-  (if (symbol? fspec)
-    fspec
-    (last fspec)))
+  (let [malli (if (symbol? fspec)
+                fspec
+                (last fspec))]
+    (if (= 'java-time/local-date? malli)
+      'local-date
+      malli)))
 
 (defn data-field->malli
   [entry]
@@ -169,7 +172,8 @@
 (defn data-spec->malli
   [data-spec]
   (let [useful-spec (filter (complement spec-name?) data-spec)]
-    (map data->malli useful-spec)))
+    (->> (map data->malli useful-spec)
+         (sort-by first))))
 
 (defn malli-spec
   ([meta-db qualify?]
