@@ -1,0 +1,1 @@
+CREATE TYPE employee_type AS ENUM('回聘', '契約工讀', '契約正式', '計件', '計時');

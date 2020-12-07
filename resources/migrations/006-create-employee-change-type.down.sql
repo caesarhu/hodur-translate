@@ -1,0 +1,1 @@
+DROP TYPE employee_change_type;

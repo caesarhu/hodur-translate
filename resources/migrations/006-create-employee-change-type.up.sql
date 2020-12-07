@@ -1,0 +1,1 @@
+CREATE TYPE employee_change_type AS ENUM('停職', '到職', '復職', '離職');

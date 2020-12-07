@@ -1,0 +1,1 @@
+CREATE TYPE salary_type AS ENUM('月薪', '計件', '計時');

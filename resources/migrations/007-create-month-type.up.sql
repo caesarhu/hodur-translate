@@ -1,0 +1,1 @@
+CREATE TYPE month_type AS ENUM('上期', '下期');

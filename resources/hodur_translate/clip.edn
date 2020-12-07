@@ -1,10 +1,21 @@
-{:database-uri #profile {:default #env JDBC_DATABASE_URL
+{:db-port "15432"
+ :db-name "bonus_db"
+ :db-user "shun"
+ :db-password "fuck1999"
+ :jdbc-url #format ["jdbc:postgresql://localhost:%s/%s?user=%s&password=%s"
+                    #ref [:db-port]
+                    #ref [:db-name]
+                    #ref [:db-user]
+                    #ref [:db-password]]
+ :database-uri #profile {:default #env JDBC_DATABASE_URL
                          :dev #or [#env JDBC_DATABASE_URL
-                                   "jdbc:postgresql://localhost:15432/bonus_db?user=shun&password=fuck1999"]}
- :migratus {:store :database
-            :migration-dir "migrations"
-            :db {:connection-uri #ref [:database-uri]}}
+                                   #ref [:jdbc-url]]}
+ :migration-dir "migrations"
  :schema-path "schema.edn"
+
+ :migratus {:store :database
+            :migration-dir #ref [:migration-dir]
+            :db {:connection-uri #ref [:database-uri]}}
 
  :components
  {:meta-db
