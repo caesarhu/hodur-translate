@@ -1,9 +1,9 @@
 (ns hodur-translate.core
   (:require
-    [hodur-translate.data-spec :as ds]
+    [hodur-translate.spec.data-spec :as ds]
     [hodur-translate.engine :as engine]
-    [hodur-translate.postgres-schema :as ps]
-    [hodur-translate.spec-schema :as ss]
+    [hodur-translate.postgres.postgres-schema :as ps]
+    [hodur-translate.spec.spec-schema :as ss]
     [hodur-translate.translate :as translate]
     [hodur-translate.utils :as utils]))
 
@@ -68,12 +68,12 @@
   ([path conn]
    (spit-data-spec path conn nil)))
 
-(defn spit-malli-spec
+(defn spit-malli-schema
   ([path conn qualify?]
    (let [result (ds/malli-spec conn qualify?)]
      (utils/spit-code path result)))
   ([path conn]
-   (spit-malli-spec path conn false)))
+   (spit-malli-schema path conn false)))
 
 
 (defn postgres-schema

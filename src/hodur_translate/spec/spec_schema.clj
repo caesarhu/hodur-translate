@@ -1,4 +1,4 @@
-(ns hodur-translate.spec-schema
+(ns hodur-translate.spec.spec-schema
   (:require
     [camel-snake-kebab.core :refer [->kebab-case-string]]
     [clojure.spec.alpha :as s]

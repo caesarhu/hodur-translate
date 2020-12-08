@@ -1,4 +1,4 @@
-(ns hodur-translate.postgres-format
+(ns hodur-translate.postgres.postgres-format
   (:require
     [clojure.string :as string]
     [honeysql-postgres.util :as util]

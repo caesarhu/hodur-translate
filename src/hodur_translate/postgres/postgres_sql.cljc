@@ -1,4 +1,4 @@
-(ns hodur-translate.postgres-sql
+(ns hodur-translate.postgres.postgres-sql
   (:require
     [clojure.spec.alpha :as s]
     [camel-snake-kebab.core :as csk]
@@ -9,7 +9,7 @@
     [datascript.core :as d]
     [datascript.query-v3 :as q]
     [datoteka.core :as fs]
-    [hodur-translate.postgres-format :as pf]
+    [hodur-translate.postgres.postgres-format :as pf]
     [hodur-translate.utils :as utils]
     [honeysql-postgres.helpers :as psqlh]
     [honeysql.core :as sql]

@@ -1,10 +1,10 @@
-(ns hodur-translate.data-spec
+(ns hodur-translate.spec.data-spec
   (:require
     [cjsauer.disqualified :refer [qualify-map unqualify-map]]
     [clojure.spec.alpha :as s]
     #?(:clj  [com.rpl.specter :as sp]
        :cljs [com.rpl.specter :as s :refer-macros [select transform setval]])
-    [hodur-translate.spec-schema :as spec]))
+    [hodur-translate.spec.spec-schema :as spec]))
 
 
 (def clojure-def 'def)
@@ -145,9 +145,10 @@
   (let [malli (if (symbol? fspec)
                 fspec
                 (last fspec))]
-    (if (= 'java-time/local-date? malli)
-      'local-date
-      malli)))
+    (cond
+      (= 'java-time/local-date? malli) 'local-date
+      (= 'java-time/local-date-time? malli) 'local-date-time
+      :else malli)))
 
 (defn data-field->malli
   [entry]
@@ -166,14 +167,14 @@
   (let [[_ mname spec-map] data
         malli-name (symbol (str "malli-" mname))
         malli-map (->> (map data-field->malli spec-map)
+                       (sort-by first)
                        (into [:map]))]
     (list clojure-def malli-name malli-map)))
 
 (defn data-spec->malli
   [data-spec]
   (let [useful-spec (filter (complement spec-name?) data-spec)]
-    (->> (map data->malli useful-spec)
-         (sort-by first))))
+    (map data->malli useful-spec)))
 
 (defn malli-spec
   ([meta-db qualify?]

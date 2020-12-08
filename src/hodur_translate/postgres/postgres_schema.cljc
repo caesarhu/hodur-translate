@@ -1,11 +1,11 @@
-(ns hodur-translate.postgres-schema
+(ns hodur-translate.postgres.postgres-schema
   (:require
     [camel-snake-kebab.core :as csk]
     [clojure.string :as string]
     #?(:clj  [com.rpl.specter :as sp]
        :cljs [com.rpl.specter :as s :refer-macros [select select-one transform setval]])
     [datoteka.core :as fs]
-    [hodur-translate.postgres-sql :as sql]
+    [hodur-translate.postgres.postgres-sql :as sql]
     [hodur-translate.utils :as utils]
     [camel-snake-kebab.core :as csk]))
 
