@@ -11,6 +11,6 @@
 
 (defn config
   ([profile]
-   (aero/read-config (io/resource "hodur_translate/clip.edn") {:profile profile}))
+   (aero/read-config (io/resource "hodur_translate/config.edn") {:profile profile}))
   ([]
    (config :dev)))

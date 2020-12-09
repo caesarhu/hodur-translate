@@ -2,6 +2,7 @@
   (:require
     [cljstyle.config :as config]
     [cljstyle.format.core :as cf]
+    [datoteka.core :as fs]
     [clojure.java.io :as io]
     [clojure.pprint :refer [pprint]]
     [clojure.set :refer [difference union intersection]]
@@ -11,7 +12,8 @@
     [datascript.core :as d]
     [datascript.query-v3 :as q]
     [cljstyle.task.core :as fix]
-    [com.rpl.specter :as sp])
+    [com.rpl.specter :as sp]
+    [datoteka.core :as fs])
   (:import
     (java.io StringWriter)))
 

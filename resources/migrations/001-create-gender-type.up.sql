@@ -1,1 +1,0 @@
-CREATE TYPE gender_type AS ENUM('女', '男');

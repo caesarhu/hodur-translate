@@ -43,4 +43,5 @@
 (defn translate
   [dic name]
   (or (bi/get-value dic name)
-      (bi/get-key dic name)))
+      (bi/get-key dic name)
+      name))

@@ -1,1 +1,0 @@
-DROP TYPE price_type;

@@ -86,7 +86,7 @@
   (ps/save-schema-sql schema-v path))
 
 
-(defn spit-db-sql
+(defn spit-sql
   [path conn]
-  (ps/save-db-sql conn path))
+  (ps/spit-sql path conn))
 

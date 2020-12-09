@@ -1,1 +1,0 @@
-DROP TYPE direct_type;

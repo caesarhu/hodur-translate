@@ -196,8 +196,8 @@
                (sql/save-sql schema new-path))))))
 
 
-(defn save-db-sql
-  [conn path]
+(defn spit-sql
+  [path conn]
   (save-schema-sql (schema conn) path))
 
 
