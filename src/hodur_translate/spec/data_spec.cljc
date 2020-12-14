@@ -4,7 +4,8 @@
     [clojure.spec.alpha :as s]
     #?(:clj  [com.rpl.specter :as sp]
        :cljs [com.rpl.specter :as s :refer-macros [select transform setval]])
-    [hodur-translate.spec.spec-schema :as spec]))
+    [hodur-translate.spec.spec-schema :as spec]
+    [clojure.string :as string]))
 
 
 (def clojure-def 'def)
@@ -144,11 +145,16 @@
   [fspec]
   (let [malli (if (symbol? fspec)
                 fspec
-                (last fspec))]
+                (last fspec))
+        remove-namespace (fn [x]
+                           (-> x name
+                               (string/split #"/")
+                               last
+                               symbol))]
     (cond
       (= 'java-time/local-date? malli) 'local-date
       (= 'java-time/local-date-time? malli) 'local-date-time
-      :else malli)))
+      :else (remove-namespace malli))))
 
 (defn data-field->malli
   [entry]
@@ -163,23 +169,32 @@
            vec))))
 
 (defn data->malli
-  [data]
+  [data qualify?]
   (let [[_ mname spec-map] data
-        malli-name (symbol (str "malli-" mname))
+        qualify-fn (fn [v]
+                     (update v 0 #(keyword (name mname) (name %))))
+        qualify-malli (fn [v]
+                        (if qualify?
+                          (map qualify-fn v)
+                          v))
         malli-map (->> (map data-field->malli spec-map)
+                       qualify-malli
                        (sort-by first)
                        (into [:map]))]
-    (list clojure-def malli-name malli-map)))
+    (hash-map (-> mname name keyword) malli-map)))
 
 (defn data-spec->malli
-  [data-spec]
+  [data-spec qualify?]
   (let [useful-spec (filter (complement spec-name?) data-spec)]
-    (map data->malli useful-spec)))
+    (map #(data->malli % qualify?) useful-spec)))
 
 (defn malli-spec
   ([meta-db qualify?]
-   (-> (schema meta-db qualify?)
-       data-spec->malli))
+   (let [malli-maps (-> (schema meta-db qualify?)
+                        (data-spec->malli qualify?))]
+     (apply merge malli-maps)))
   ([meta-db]
    (malli-spec meta-db false)))
+
+;;; 目前先用這種笨方法轉換成malli格式，如有時間再研究直接由datascript轉換
 

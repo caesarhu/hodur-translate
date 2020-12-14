@@ -70,8 +70,9 @@
 
 (defn spit-malli-schema
   ([path conn qualify?]
-   (let [result (ds/malli-spec conn qualify?)]
-     (utils/spit-code path result)))
+   (let [result (-> (ds/malli-spec conn qualify?)
+                    utils/pretty-format)]
+     (spit path result)))
   ([path conn]
    (spit-malli-schema path conn false)))
 

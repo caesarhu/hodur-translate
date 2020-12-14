@@ -15,7 +15,6 @@
     [java-time.repl :as jr]
     [hodur-translate.spec.malli-schemas :as ms]
     [malli.json-schema :as json-schema]
-    [auto-malli :as auto]
     [datoteka.core :as fs]
     [hodur-translate.postgres.postgres-schema :as ps]))
 
