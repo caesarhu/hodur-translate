@@ -1,10 +1,10 @@
 (ns hodur-translate.spec.data-spec
   (:require
-    [cjsauer.disqualified :refer [qualify-map unqualify-map]]
     [clojure.spec.alpha :as s]
     #?(:clj  [com.rpl.specter :as sp]
        :cljs [com.rpl.specter :as s :refer-macros [select transform setval]])
     [hodur-translate.spec.spec-schema :as spec]
+    [medley.core :as medley]
     [clojure.string :as string]))
 
 
@@ -44,7 +44,7 @@
   ([m qualify?]
    (if qualify?
      m
-     (unqualify-map m)))
+     (medley/map-keys #(keyword (name %)) m)))
   ([m]
    (unqualify-if m false)))
 

@@ -16,6 +16,7 @@
     [hodur-translate.spec.malli-schemas :as ms]
     [malli.json-schema :as json-schema]
     [datoteka.core :as fs]
+    [hodur-translate.translate :as ht]
     [hodur-translate.postgres.postgres-schema :as ps]))
 
 (set-init! (fn [] (config :dev)))
